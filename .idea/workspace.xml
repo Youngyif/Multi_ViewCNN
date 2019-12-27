@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="14559703-f023-458a-aa20-20c1cf301a2d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/splited_casia2.py" afterDir="false" />
-    </list>
+    <list default="true" id="14559703-f023-458a-aa20-20c1cf301a2d" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,11 +47,30 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1577431294217</updated>
-      <workItem from="1577431295304" duration="1282000" />
+      <workItem from="1577431295304" duration="1543000" />
     </task>
+    <task id="LOCAL-00001" summary="FIRST COMMIT">
+      <created>1577435178922</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1577435178922</updated>
+    </task>
+    <task id="LOCAL-00002" summary="FIRST COMMIT">
+      <created>1577435333515</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1577435333515</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="1" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="FIRST COMMIT" />
+    <option name="LAST_COMMIT_MESSAGE" value="FIRST COMMIT" />
   </component>
 </project>
