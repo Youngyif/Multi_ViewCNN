@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$/../multi-viewCNN" />
-    <orderEntry type="jdk" jdkName="Python 3.7 (label_practice)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.7.3 (sftp://yangyifan@222.201.187.244:22/home/raochendi/anaconda3/bin/python3.7)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">

@@ -19,7 +19,7 @@
       <paths name="yangyifan@222.201.187.244:22 (1)">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/yangyifan/code" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$/../multi-viewCNN" web="/" />
           </mappings>
         </serverdata>
       </paths>
