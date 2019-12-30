@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="14559703-f023-458a-aa20-20c1cf301a2d" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/.idea/multi-viewscc.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/.idea/multi-viewscc.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../multi-viewCNN/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/splited_casia2.py" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/splited_casia2.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -43,7 +40,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.sortPathName">
+    <configuration name="sortPathName" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="multi-viewscc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="splited_casia2" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="multi-viewscc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -68,6 +87,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.sortPathName" />
         <item itemvalue="Python.splited_casia2" />
       </list>
     </recent_temporary>
@@ -82,7 +102,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1577431294217</updated>
-      <workItem from="1577431295304" duration="5347000" />
+      <workItem from="1577431295304" duration="23347000" />
     </task>
     <task id="LOCAL-00001" summary="FIRST COMMIT">
       <created>1577435178922</created>
@@ -105,7 +125,14 @@
       <option name="project" value="LOCAL" />
       <updated>1577435433210</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="FIRST COMMIT">
+      <created>1577455354705</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1577455354705</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -119,14 +146,27 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/../multi-viewCNN/dataProcess/splited_casia2.py</url>
-          <line>16</line>
-          <option name="timeStamp" value="1" />
+          <url>file://$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py</url>
+          <line>123</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py</url>
+          <line>131</line>
+          <option name="timeStamp" value="24" />
         </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/multi_viewscc$splited_casia2.coverage" NAME="splited_casia2 Coverage Results" MODIFIED="1577438627628" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
+    <SUITE FILE_PATH="coverage/multi_viewscc$sortPathName.coverage" NAME="sortPathName Coverage Results" MODIFIED="1577676140152" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
   </component>
 </project>
