@@ -2,8 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="14559703-f023-458a-aa20-20c1cf301a2d" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../multi-viewCNN/test/testLoader.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../multi-viewCNN/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/iter2SpiltPath.py" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/dataProcess/iter2SpiltPath.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/dataloader/myloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/dataloader/myloader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../multi-viewCNN/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/../multi-viewCNN/trainer.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -40,7 +44,29 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.sortPathName">
+  <component name="RunManager" selected="Python.testLoader">
+    <configuration name="iter2SpiltPath" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="multi-viewscc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../multi-viewCNN/dataProcess/iter2SpiltPath.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="sortPathName" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="multi-viewscc" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -85,8 +111,32 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="testLoader" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="multi-viewscc" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../multi-viewCNN/test" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../multi-viewCNN/test/testLoader.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.testLoader" />
+        <item itemvalue="Python.iter2SpiltPath" />
         <item itemvalue="Python.sortPathName" />
         <item itemvalue="Python.splited_casia2" />
       </list>
@@ -102,7 +152,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1577431294217</updated>
-      <workItem from="1577431295304" duration="23347000" />
+      <workItem from="1577431295304" duration="37732000" />
     </task>
     <task id="LOCAL-00001" summary="FIRST COMMIT">
       <created>1577435178922</created>
@@ -132,7 +182,14 @@
       <option name="project" value="LOCAL" />
       <updated>1577455354705</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="iter2 spilt data">
+      <created>1577676350209</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1577676350209</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -140,20 +197,16 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="FIRST COMMIT" />
-    <option name="LAST_COMMIT_MESSAGE" value="FIRST COMMIT" />
+    <MESSAGE value="iter2 spilt data" />
+    <option name="LAST_COMMIT_MESSAGE" value="iter2 spilt data" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py</url>
-          <line>123</line>
-          <option name="timeStamp" value="23" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/../multi-viewCNN/dataProcess/sortPathName.py</url>
-          <line>131</line>
-          <option name="timeStamp" value="24" />
+          <url>file://$PROJECT_DIR$/../multi-viewCNN/test/testLoader.py</url>
+          <line>72</line>
+          <option name="timeStamp" value="31" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -166,7 +219,9 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/multi_viewscc$testLoader.coverage" NAME="testLoader Coverage Results" MODIFIED="1577714219789" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/test" />
     <SUITE FILE_PATH="coverage/multi_viewscc$splited_casia2.coverage" NAME="splited_casia2 Coverage Results" MODIFIED="1577438627628" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
-    <SUITE FILE_PATH="coverage/multi_viewscc$sortPathName.coverage" NAME="sortPathName Coverage Results" MODIFIED="1577676140152" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
+    <SUITE FILE_PATH="coverage/multi_viewscc$iter2SpiltPath.coverage" NAME="iter2SpiltPath Coverage Results" MODIFIED="1577695900287" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
+    <SUITE FILE_PATH="coverage/multi_viewscc$sortPathName.coverage" NAME="sortPathName Coverage Results" MODIFIED="1577676524162" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/../multi-viewCNN/dataProcess" />
   </component>
 </project>

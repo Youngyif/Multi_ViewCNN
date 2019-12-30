@@ -35,11 +35,11 @@ class NetOption (object):
 
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
-        self.netType = "ResNet"  # options: ResNet | DenseNet | Inception-v3 | AlexNet
+        self.netType = "multi_viewCNN"  # options: ResNet | DenseNet | Inception-v3 | AlexNet
         self.experimentID = "darkvslight_1104_onlyNarrow"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
-
+        self.numOfView = 21
         # ---------- Resume or Retrain options --------------------------------
         ##v3
 

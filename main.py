@@ -86,23 +86,8 @@ def main(net_opt=None):
         start_stage += 1
 
     # model
-    if opt.netType == 'ResNet':
-        model = ResNetImageNet (
-            opt=opt, num_classes=opt.nClasses, retrain=check_point_params['model'])
-    elif opt.netType == 'DenseNet':
-        model = DenseNetImageNet (
-            opt=opt, num_classes=opt.nClasses, retrain=check_point_params['model'])
-    elif opt.netType == 'Inception-v3':
-        model = Inception3ImageNet (
-            opt=opt, num_classes=opt.nClasses, retrain=check_point_params['model'])
-    elif opt.netType == 'AlexNet':
-        model = AlexNetImageNet (
-            opt=opt, num_classes=opt.nClasses, retrain=check_point_params['model'])
-    elif opt.netType == 'VGG':
-        model = VGGImageNet (
-            opt=opt, num_classes=opt.nClasses, retrain=check_point_params['model'])
-    else:
-        assert False, "invalid net type"
+    if opt.netType == 'multi_viewCNN':
+        model = my_mvcnn(opt.numOfView)
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
     trainer = Trainer (model=model, opt=opt, optimizer=optimizer)

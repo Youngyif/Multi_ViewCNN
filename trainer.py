@@ -203,13 +203,8 @@ def writeDiseaseType(x, y):
 
 def generateTarget(images, labels):
     target_disease = torch.LongTensor (labels.size (0)).zero_ () + int (1)
-    # print ("target_disease", target_disease)
-    # print("zero",torch.LongTensor(labels.size(0)).zero_())
-    # print("diseatype", self.opt.disease_type)
-    # print("labels", labels)
     reduce_labels = labels == target_disease
     reduce_labels = reduce_labels.type_as (images)
-    # print ("reduce_labels", reduce_labels)
 
     return reduce_labels
 
@@ -252,25 +247,16 @@ class Trainer (object):
         for param_group in self.optimzer.param_groups:
             param_group['lr'] = self.lr
 
-    def forward(self, img_dark_leftRegion_var, img_dark_rightRegion_var, img_light_leftRegion_var,
-                img_light_rightRegion_var, leftlabels=None, rightlabels=None):
+    def forward(self, dark_input_var, light_input_var, labels_var=None):
         # forward and backward and optimize
-        leftRegionPair = (img_dark_leftRegion_var, img_light_leftRegion_var)
-        rightRegionPair = (img_dark_rightRegion_var, img_light_rightRegion_var)
-        output_l = self.model (leftRegionPair)
-        output_r = self.model (rightRegionPair)
-        # print("output!!!",output_l.size())
-        # print("output",output_l)
-        # print("label!!!",leftlabels.size())
-        # print("label", leftlabels)
-        if leftlabels is not None and rightlabels is not None:
-            l_loss = self.criterion (output_l, leftlabels)
-            r_loss = self.criterion (output_r, rightlabels)
-            loss = l_loss + r_loss
+        Pair = (dark_input_var, light_input_var)
+        output = self.model (Pair)
+        if labels_var is not None :
+            loss = self.criterion (output, labels_var)
         else:
             loss = None
 
-        return output_l, output_r, loss
+        return output, loss
 
     def backward(self, loss):
         self.optimzer.zero_grad ()
@@ -291,44 +277,31 @@ class Trainer (object):
         start_time = time.time ()
         end_time = start_time
 
-        for i, (images, labels) in enumerate (train_loader):
+        for i, (dark_input, light_input, labels) in enumerate (train_loader):
             self.model.train ()
             start_time = time.time ()
             data_time = start_time - end_time
-            left_label, right_label = labels
-
             ####  process image
-            img_dark_leftRegion, img_dark_rightRegion, img_light_leftRegion, img_light_rightRegion = images
 
-            left_labels = generateTarget (img_dark_leftRegion, left_label)
-            left_reduce_labels = left_labels
-            left_labels = left_labels.cuda ()
-            left_labels_var = Variable (left_labels)
+            labels = generateTarget (dark_input, labels)
+            reduce_labels = labels
+            labels = labels.cuda ()
+            labels_var = Variable (labels)
 
-            right_labels = generateTarget (img_dark_leftRegion, right_label)
-            right_reduce_labels = right_labels
-            right_labels = right_labels.cuda ()
-            right_labels_var = Variable (right_labels)
 
-            img_dark_leftRegion_var = Variable (img_dark_leftRegion.cuda ())
-            img_dark_rightRegion_var = Variable (img_dark_rightRegion.cuda ())
-            img_light_leftRegion_var = Variable (img_light_leftRegion.cuda ())
-            img_light_rightRegion_var = Variable (img_light_rightRegion.cuda ())
 
-            l_output, r_output, loss = self.forward (img_dark_leftRegion_var, img_dark_rightRegion_var,
-                                                     img_light_leftRegion_var, img_light_rightRegion_var,
-                                                     left_labels_var, right_labels_var)
+            dark_var = Variable (dark_input.cuda ())
+            light_var = Variable (light_input.cuda ())
 
-            r_prediction = r_output.data.cpu ()
+            output, loss = self.forward (dark_var, light_var, labels_var)
 
-            output_list.append (r_prediction.numpy ())
-            label_list.append (right_reduce_labels.cpu ().numpy ())
 
-            l_prediction = l_output.data.cpu ()
+
+            prediction = output.data.cpu ()
             # print("pred",prediction)
 
-            output_list.append (l_prediction.numpy ())
-            label_list.append (left_reduce_labels.cpu ().numpy ())
+            output_list.append (prediction.numpy ())
+            label_list.append (reduce_labels.cpu ().numpy ())
 
             self.backward (loss)
             loss_sum += float (loss.data)
@@ -355,69 +328,31 @@ class Trainer (object):
 
         start_time = time.time ()
         end_time = start_time
-        for i, (images, labels) in enumerate (test_loader):
-            # if images.size(0) != self.opt.batchSize:
-            #     break
+        for i, (dark_input, light_input, labels) in enumerate (test_loader):
 
             start_time = time.time ()
             data_time = start_time - end_time
-            left_label = labels[0]
-            right_label = labels[1]
-            img_dark_leftRegion, img_dark_rightRegion, img_light_leftRegion, img_light_rightRegion = images
-            left_labels = generateTarget (img_dark_leftRegion, left_label)
-            left_reduce_labels = left_labels
-            left_labels = left_labels.cuda ()
 
-            right_labels = generateTarget (img_dark_leftRegion, right_label)
-            right_reduce_labels = right_labels
-            right_labels = right_labels.cuda ()
+            labels = generateTarget (dark_input, labels)
+            reduce_labels = labels
+            labels = labels.cuda ()
+
+
             with torch.no_grad ():
-                left_labels_var = Variable (left_labels)
-                right_labels_var = Variable (right_labels)
+                labels_var = Variable (labels)
 
-            img_dark_leftRegion = img_dark_leftRegion.cuda ()
-            img_dark_rightRegion = img_dark_rightRegion.cuda ()
-            img_light_leftRegion = img_light_leftRegion.cuda ()
-            img_light_rightRegion = img_light_rightRegion.cuda ()
+            dark_input= dark_input.cuda ()
+            light_input=light_input.cuda()
             with torch.no_grad ():
-                # images_var = Variable(images)
-                img_dark_leftRegion_var = Variable (img_dark_leftRegion)
-                img_dark_rightRegion_var = Variable (img_dark_rightRegion)
-                img_light_leftRegion_var = Variable (img_light_leftRegion)
-                img_light_rightRegion_var = Variable (img_light_rightRegion)
+                dark_var = Variable (dark_input)
+                light_var = Variable (light_input)
 
-            # target_disease = torch.LongTensor(labels.size(0)).zero_() + int(self.opt.disease_type)
-            # reduce_labels = labels == target_disease
-            # reduce_labels = reduce_labels.type_as(images)
-            # labels = reduce_labels
 
-            # labels = labels.cuda()
-            # # labels_var = Variable(labels, volatile=True)
-            # with torch.no_grad():
-            #     labels_var = Variable(labels)
-            # images = images.cuda()
-            # with torch.no_grad():
-            #     images_var = Variable(images)
-            # images_var = Variable(images, volatile=True)
+            output, loss = self.forward (dark_var, light_var, labels_var)
 
-            # l_output, l_loss = self.forward(images_var,flag, left_labels_var)
-            # print("output",output)#
-            # print("loss",loss)#
-
-            l_output, r_output, loss = self.forward (img_dark_leftRegion_var, img_dark_rightRegion_var,
-                                                     img_light_leftRegion_var, img_light_rightRegion_var,
-                                                     left_labels_var, right_labels_var)
-            # r_output, r_loss = self.forward (images_var, flag, right_labels_var)
-
-            r_prediction = r_output.data.cpu ()
-            output_list.append (r_prediction.numpy ())
-            label_list.append (right_reduce_labels.cpu ().numpy ())
-
-            l_prediction = l_output.data.cpu ()
-            output_list.append (l_prediction.numpy ())
-            label_list.append (left_reduce_labels.cpu ().numpy ())
-
-            # loss_sum += float(loss.data)
+            prediction = output.data.cpu ()
+            output_list.append (prediction.numpy ())
+            label_list.append (reduce_labels.cpu ().numpy ())
 
             end_time = time.time ()
             iter_time = end_time - start_time
