@@ -61,7 +61,7 @@ def main(net_opt=None):
 
     # create data loader
     data_loader = DataLoader (dataset=opt.data_set, data_path=opt.data_path, label_path=opt.label_path,
-                              batch_size=opt.batchSize,
+                              batch_size=opt.batchSize, rootpath =opt.rootpath,
                               n_threads=opt.nThreads, ten_crop=opt.tenCrop, dataset_ratio=opt.datasetRatio)
     train_loader, test_loader = data_loader.getloader ()
 

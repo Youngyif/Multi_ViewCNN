@@ -46,15 +46,13 @@ def get_label(label_dir):
 def make_dataset(rootpath, root, label_df):
     images_light = []
     images_dark = []
-    label_col_name = ""
     for line in open (root):
-        org_path = line.rstrip ('\n')
+        org_path = line.strip ('\n')
         label = label_df.loc[org_path, "synechia"]
         eyeid = org_path.split ("_")[0]
         odos = org_path.split ("_")[1]
         region = org_path.split ("_")[2]
         indexs = org_path.split ("_")[3]
-        # print(org_path)
         realpath = rootpath + "/" + eyeid + "/"
         if odos == "od":
             realpath += "R"
@@ -71,7 +69,7 @@ def make_dataset(rootpath, root, label_df):
         all_image_path1.sort ()
         images_dark.append ((all_image_path1[0:21], darkrealpath, label, region))
 
-    return (images_light, images_dark)
+    return images_light, images_dark
 
 def make3d(tup):   #tup:([21 images], label, region)
     imgs = Image.open (tup[1] + "/" + tup[0][0]).convert ("RGB")
@@ -98,20 +96,22 @@ def make3d(tup):   #tup:([21 images], label, region)
     return input, label
 
 class Myloader(data.Dataset):
-    def __init__(self, txtroot, label_dir, root, transform=None):  ##root: path before filename
+    def __init__(self, rootpath, txtroot, label_dir, transform=None):  ##root: path before filename
         self.root = txtroot
         self.label_dir = label_dir
         self.loader = pil_loader
         self.transform = transform
         self.label_df = get_label(label_dir)
-        self.imgs = make_dataset(txtroot, self.label_df)
-        self.rootpath = root
+        self.rootpath = rootpath
+        self.images_light, self.images_dark = make_dataset(rootpath, txtroot, self.label_df)
+
 
     def __getitem__(self, index):
-        images_light, images_dark = self.imgs[index]
+        images_light = self.images_light[index]
+        images_dark = self.images_dark[index]
         dark_input, label = make3d(images_dark)
         light_input, label = make3d (images_light)
         return dark_input, light_input, label
 
     def __len__(self):
-        return len (self.imgs)
+        return len (self.images_light)

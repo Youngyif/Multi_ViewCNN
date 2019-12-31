@@ -7,8 +7,9 @@ class NetOption (object):
     def __init__(self):
         #  ------------ General options ---------------------------------------
         self.save_path = ""  # log path
-        self.data_path = "/usr/home2/code/dark_light_128_master/as-oct/"  # path for loading data set  \
-        self.label_path = "/usr/home2/code/dark_light_128_master/as-oct/DL_label11_11.csv"
+        self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
+        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv"
+        self.rootpath = "/mnt/dataset/splited_Casia2"
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
@@ -45,7 +46,7 @@ class NetOption (object):
 
         # self.model1 = '/home/yangyifan/jingwen_code_oct_v2/as-oct/log_asoct_ResNet_50_onevsall_bs16_type=2-lr=0.001/model/best_model.pkl'## load model for output
         # self.retrain = [self.model1]  # path to model to retrain with
-        self.retrain = "/usr/home2/code/dark_light_128_master/as-oct/log_asoct_ResNet_18_onevsall_bs16_darkvslight_1104_onlyNarrow/modelonly_narrow/best_model.pkl"  # path to model to retrain with
+        self.retrain = None  # path to model to retrain with
         self.resume = None  # path to directory containing checkpoint
         # self.resume = "/usr/home2/code/jingwen_code_oct_cropped/as-oct/log_asoct_ResNet_18_onevsall_bs8_addpad_9.6_3foldType=1-lr=0.01/model/checkpoint7.pkl"
         self.resumeEpoch = 0  # manual epoch number for resume
