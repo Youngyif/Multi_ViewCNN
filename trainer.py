@@ -205,7 +205,7 @@ def generateTarget(images, labels):
     target_disease = torch.LongTensor (labels.size (0)).zero_ () + int (1)
     reduce_labels = labels == target_disease
     reduce_labels = reduce_labels.type_as (images)
-
+    print(type(reduce_labels))
     return reduce_labels
 
 
@@ -252,6 +252,7 @@ class Trainer (object):
         Pair = (dark_input_var, light_input_var)
         output = self.model (Pair)
         if labels_var is not None :
+            # print(output.size(), labels_var.size(), type(output))
             loss = self.criterion (output, labels_var)
         else:
             loss = None
@@ -286,11 +287,11 @@ class Trainer (object):
             labels = generateTarget (dark_input, labels)
             reduce_labels = labels
             labels = labels.cuda ()
-            labels_var = Variable (labels)
+            labels_var = Variable(labels)
 
 
 
-            dark_var = Variable (dark_input.cuda ())
+            dark_var = Variable(dark_input.cuda ())
             light_var = Variable (light_input.cuda ())
 
             output, loss = self.forward (dark_var, light_var, labels_var)
@@ -298,7 +299,6 @@ class Trainer (object):
 
 
             prediction = output.data.cpu ()
-            # print("pred",prediction)
 
             output_list.append (prediction.numpy ())
             label_list.append (reduce_labels.cpu ().numpy ())

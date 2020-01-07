@@ -49,6 +49,7 @@ class Visualization(object):
                 f.write(str(k)+": "+str(v)+"\n")
 
     def writelog(self, input_data):
+        print(">>>>> write to log")
         txt_file = open(self.log_file, 'a+')
         txt_file.write(str(input_data) + "\n")
         txt_file.close()

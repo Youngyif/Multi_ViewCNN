@@ -6,7 +6,7 @@ class NetOption (object):
 
     def __init__(self):
         #  ------------ General options ---------------------------------------
-        self.save_path = ""  # log path
+        self.save_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataSave/"  # log path
         self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
         self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv"
         self.rootpath = "/mnt/dataset/splited_Casia2"
@@ -14,19 +14,19 @@ class NetOption (object):
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
         self.nGPU = 1  # number of GPUs to use by default
-        self.GPU = 2  # default gpu to use, options: range(nGPU)
+        self.GPU = 7  # default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
 
         # ------------- Data options ------------------------------------------
         self.nThreads = 10  # number of data loader threads
 
         # ------------- Training options --------------------------------------
-        self.testOnly = True  # run on validation set only
+        self.testOnly = False  # run on validation set only
         self.tenCrop = False  # Ten-crop testing
 
         # ---------- Optimization options -------------------------------------
         self.nEpochs = 80  # number of total epochs to train
-        self.batchSize = 16  # mini-batch size
+        self.batchSize = 4  # mini-batch size
         self.LR = 0.001  # initial learning rate
         self.lrPolicy = "multistep"  # options: multistep | linear | exp
         self.momentum = 0.9  # momentum
@@ -37,7 +37,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "multi_viewCNN"  # options: ResNet | DenseNet | Inception-v3 | AlexNet
-        self.experimentID = "darkvslight_1104_onlyNarrow"
+        self.experimentID = "darkvslight_3D_multiview_light"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 21

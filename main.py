@@ -100,10 +100,10 @@ def main(net_opt=None):
     # define visualizer
     visualize = Visualization (opt=opt)
     visualize.writeopt (opt=opt)
-
     best_auc = 0
     start_epoch = opt.resumeEpoch
     for epoch in range (start_epoch, opt.nEpochs):
+
         train_auc, train_loss = trainer.train (
             epoch=epoch, train_loader=train_loader)
         test_auc, test_loss, test_acc, test_precision, test_recall, test_f1, test_gmean, tn, fp, fn, tp = trainer.test (
