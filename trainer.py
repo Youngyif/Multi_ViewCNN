@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from models.modelDefine import  *
+from models.modelDifine import  *
 import torch.autograd
 import time
 import math

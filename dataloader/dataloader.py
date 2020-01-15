@@ -71,14 +71,14 @@ class DataLoader (object):
                 # transforms.Scale(600),
                 # transforms.Grayscale (num_output_channels=1), ##转为灰度图 output channel 由3改为1
                 transforms.Scale (520),
-                transforms.RandomHorizontalFlip (),
+                # transforms.RandomHorizontalFlip (),
                 # transforms.RandomVerticalFlip(),
                 # transforms.RandomRotation(15),
                 transforms.RandomSizedCrop (imgSize),
                 transforms.ToTensor (),
                 # auxtransform.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
                 # auxtransform.Lighting(alphastd=0.1, eigval=imagenet_pca['eigval'], eigvec=imagenet_pca['eigvec']),
-                # normalize,
+                normalize,
             ])),
             batch_size=self.batch_size,
             shuffle=True,
@@ -91,7 +91,7 @@ class DataLoader (object):
             transforms.Scale (520),
             transforms.CenterCrop (imgSize),
             transforms.ToTensor (),
-            # normalize,
+            normalize,
         ])
         test_loader = torch.utils.data.DataLoader (
             Myloader (rootpath, test_dir, label_path, test_transform),

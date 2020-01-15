@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import random
-def split_dataset_1(root_path="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv", tain_percent=0.34, test_percent=0.34, val_percent=0.3):
+
+###for split data
+def split_dataset_1(root_path="I:\octdata\\brightVsDark_label\label version\\3D_label\copyed_label_for_split\only_narrow/v2_exisit_noaloneclock_half_3d_label.csv", tain_percent=0.5, test_percent=0.5, val_percent=0):
     df = pd.read_csv(root_path)
     all_images = df['details']
 
@@ -11,7 +13,7 @@ def split_dataset_1(root_path="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/d
 
     for img in all_images:
         data = img.split('_')
-        idx = data[0]
+        idx = data[0]+"_"+data[1]
         if idx not in tmp_list:
             tmp_list.append(idx)
 
@@ -25,7 +27,7 @@ def split_dataset_1(root_path="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/d
     val_list = []
     for img in all_images:
         data = img.split('_')
-        idx = data[0]
+        idx = data[0]+"_"+data[1]
         if idx in val_tmp_list:
             val_list.append(img)
         elif idx in train_tmp_list:
@@ -68,12 +70,13 @@ def spilted_eyeid_to_txt(lists):
 
 if __name__ == '__main__':
 
-    with open("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dData.txt") as f:
+    with open("/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/3dData.txt") as f:
         all = sorted(f.readlines())  ##all file structure in file
         for i in all:
             new_i = i.split("*")[0]+"_"+i.split("*")[1]+"_"+i.split("*")[2]
             print(new_i)
     val_list, test_list, train_list = split_dataset_1 ()
+    val_list = train_list
     final_val_list=[]
     # print(val_list)
     for i in val_list:
@@ -90,6 +93,6 @@ if __name__ == '__main__':
         if newid_dark in all and newid_light in all:
             final_val_list.append(i)
     print(len(val_list),len(final_val_list))
-    write_to_txt(final_val_list, "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/val.txt")
+    write_to_txt(final_val_list, "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/train.txt")
     # spilted_eyeid_to_txt (train_list)
     # spilted_eyeid_to_txt (train_list)

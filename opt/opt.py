@@ -7,14 +7,14 @@ class NetOption (object):
     def __init__(self):
         #  ------------ General options ---------------------------------------
         self.save_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataSave/"  # log path
-        self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
-        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv"
+        self.data_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/" # path for loading data set  \
+        self.label_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/label_version/v2_exisit_noaloneclock_half_3d_label.csv"
         self.rootpath = "/mnt/dataset/splited_Casia2"
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
         self.nGPU = 1  # number of GPUs to use by default
-        self.GPU = 7  # default gpu to use, options: range(nGPU)
+        self.GPU = 0 # default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
 
         # ------------- Data options ------------------------------------------
@@ -37,10 +37,10 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "multi_viewCNN"  # options: ResNet | DenseNet | Inception-v3 | AlexNet
-        self.experimentID = "darkvslight_3D_multiview_light"
+        self.experimentID = "half_clock_darkvslight_3D_multiview_light-dark_catdim=11"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
-        self.numOfView = 21
+        self.numOfView = 10
         # ---------- Resume or Retrain options --------------------------------
         ##v3
 

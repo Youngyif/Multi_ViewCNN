@@ -1,6 +1,6 @@
 import os
 list1=[]
-with open ("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dData.txt", "a") as f:
+with open ("/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/3dData.txt", "a") as f:
     path = "/mnt/dataset/splited_Casia2"
     for root, dirs, files in os.walk(path):
         # print(root)

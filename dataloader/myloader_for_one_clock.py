@@ -18,7 +18,6 @@ def get_label(label_dir):
     return label_df
 
 
-
 def make_dataset(rootpath, root, label_df):
     images_light = []
     images_dark = []
@@ -28,7 +27,7 @@ def make_dataset(rootpath, root, label_df):
         eyeid = org_path.split ("_")[0]
         odos = org_path.split ("_")[1]
         region = org_path.split ("_")[2]
-        indexs = int (org_path.split ("_")[3])
+        indexs = org_path.split ("_")[3]
         realpath = rootpath + "/" + eyeid + "/"
         if odos == "od":
             realpath += "R"
@@ -36,24 +35,18 @@ def make_dataset(rootpath, root, label_df):
             realpath += "L"
         darkrealpath = realpath + "/D/"
         lightrealpath = realpath + "/L/"
-        lightrealpath += str (int (indexs / 2))
-        darkrealpath += str (int (indexs / 2))
+        lightrealpath += str (indexs)
+        darkrealpath += str (indexs)
         all_image_path = list (os.listdir (lightrealpath))
         all_image_path.sort ()
-        if indexs / 2 - int (indexs / 2) == 0.5:
-            images_light.append ((all_image_path[11:21], lightrealpath, label, region))
-            all_image_path1 = list (os.listdir (darkrealpath))
-            all_image_path1.sort ()
-            images_dark.append ((all_image_path1[11:21], darkrealpath, label, region))
-        if indexs / 2 - int (indexs / 2) == 0:
-            images_light.append ((all_image_path[1:11], lightrealpath, label, region))
-            all_image_path1 = list (os.listdir (darkrealpath))
-            all_image_path1.sort ()
-            images_dark.append ((all_image_path1[1:11], darkrealpath, label, region))
-    # print(images_dark)
+        images_light.append ((all_image_path[0:21], lightrealpath, label, region))
+        all_image_path1 = list (os.listdir (darkrealpath))
+        all_image_path1.sort ()
+        images_dark.append ((all_image_path1[0:21], darkrealpath, label, region))
+
     return images_light, images_dark
 
-def make3d(tup):   #tup:([10 images], label, region)
+def make3d(tup):   #tup:([21 images], label, region)
     imgs = Image.open (tup[1] + "/" + tup[0][0]).convert ("RGB")
     normalize = transforms.Normalize (mean=[0.485, 0.456, 0.406],
                                       std=[0.229, 0.224, 0.225])

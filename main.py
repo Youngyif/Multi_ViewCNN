@@ -1,5 +1,4 @@
-from opt.opt import  *
-from models.modelDefine import *
+from opt.opt import *
 import time
 from dataloader.dataloader import *
 from saveModel.visualization import *

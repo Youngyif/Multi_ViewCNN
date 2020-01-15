@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import random
-def split_dataset_1(root_path="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv", tain_percent=0.34, test_percent=0.34, val_percent=0.3):
+def split_dataset_1(root_path="/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/3dlabel_only_narrow.csv", tain_percent=0.34, test_percent=0.34, val_percent=0.3):
     df = pd.read_csv(root_path)
     all_images = df['details']
 

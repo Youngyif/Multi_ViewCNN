@@ -10,21 +10,42 @@ class my_mvcnn(nn.Module):
     def __init__(self, num_views):
         super(my_mvcnn, self).__init__()
         self.net = models.resnet18(pretrained=True)
-        self.net2 = nn.Sequential(*list(self.net.children())[:-1])
+        self.innet2 = nn.Conv2d(6, 64, kernel_size=7, stride=2, padding=3,bias=False)
+        self.net2 = nn.Sequential(*list(self.net.children())[1:-1])
         self.num_views = num_views
         self.net_2 = nn.Linear(512,1)
         self.sigmoid = nn.Sigmoid()
         self.dropout = nn.Dropout(0.5)
-    def forward(self, x):
-        x = x[1]
-        N, V, C, H, W = x.size ()
-        x = x.view(-1, C, H, W)
-        y = self.net2(x)
-        y = y.view((int(x.shape[0]/self.num_views),self.num_views,y.shape[-3],y.shape[-2],y.shape[-1]))#(1, 21, 512, 1, 1)
-        y = self.net_2 (torch.max (y, 1)[0].view (y.shape[0], -1))
-        y = self.dropout(y)
-        y = self.sigmoid (y)
-        return y
+    def forward(self, x):  ##x[0] is dark x[1] is light
+        ####forward for dark####
+        x_d = x[1]
+        N, V, C, H, W = x_d.size ()
+        x_d = x_d.view(-1, C, H, W)
+
+        # y_d = self.net2(x_d)
+        # print(y_d.size())
+        # y_d = y_d.view((int(x_d.shape[0]/self.num_views),self.num_views,y_d.shape[-3],y_d.shape[-2],y_d.shape[-1]))#(1, 21, 512, 1, 1)
+        # print(y_d.size())
+        # y_d = self.net_2 (torch.max (y_d, 1)[0].view (y_d.shape[0], -1))
+        # y_d = self.dropout(y_d)
+        # y_d = self.sigmoid (y_d)
+        ####forward for dark####
+
+        ####forward for light####
+        x_l = x[0]
+        N, V, C, H, W = x_l.size ()
+        x_l = x_l.view (-1, C, H, W)
+        x_cat = torch.cat ((x_d, x_l), 1)
+        y_l = self.innet2(x_cat)
+        y_l = self.net2 (y_l)
+        y_l = y_l.view ((int (x_cat.shape[0] / self.num_views), self.num_views, y_l.shape[-3], y_l.shape[-2],
+                         y_l.shape[-1]))  # (1, 21, 512, 1, 1)
+        y_l = self.net_2 (torch.max (y_l, 1)[0].view (y_l.shape[0], -1))
+
+        y_l = self.dropout (y_l)
+        y_l = self.sigmoid (y_l)
+        ####forward for light####
+        return y_l
 
 class ConvColumn6 (nn.Module):
 
