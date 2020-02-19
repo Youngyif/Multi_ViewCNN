@@ -25,6 +25,12 @@ def make_dataset(rootpath, root, label_df):
     for line in open (root):
         org_path = line.strip ('\n')
         label = label_df.loc[org_path, "synechia"]
+        """
+        尝试一下分类宽窄角
+        """
+        labelopennarrow = label_df.loc[org_path, "openORnarrow"]
+        label = labelopennarrow
+        #####
         eyeid = org_path.split ("_")[0]
         odos = org_path.split ("_")[1]
         region = org_path.split ("_")[2]

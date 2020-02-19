@@ -54,6 +54,7 @@ class my_mvcnn(nn.Module):
         self.dropout = nn.Dropout(0.5)
         # self.net = load_models(my_mvcnn, self.pretrainpath)
         if opt.retrain:
+            print("retrain model >>>>>>")
             retrain = torch.load(opt.retrain)["model"]
             if isinstance(retrain, nn.DataParallel):
                 a = retrain
@@ -75,7 +76,7 @@ class my_mvcnn(nn.Module):
                                           self.layer3,
                                           self.layer4,
                                           self.avgpool)
-                self.net2 = retrain.module.net_2
+                self.net_2 = retrain.module.net_2
                 # self.fc = retrain.module.fc
                 # self.model = retrain.module.model
             else:
@@ -114,8 +115,9 @@ class my_mvcnn(nn.Module):
         x_cat = torch.cat ((x_d, x_l), 1)
         xsize = x_cat.size()
         y_l = self.innet2(x_cat)
+        # size1 = y_l.size()
         y_l = self.net2 (y_l)
-        ysize=y_l.size()
+        # ysize=y_l.size()
         y_l = y_l.view ((int (x_cat.shape[0] / self.num_views), self.num_views, y_l.shape[-3], y_l.shape[-2],
                          y_l.shape[-1]))  # (1, 21, 512, 1, 1)
         y_l = self.net_2 (torch.max (y_l, 1)[0].view (y_l.shape[0], -1))
@@ -359,8 +361,6 @@ class resnet3d(nn.Module):
                                        temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        for p in self.parameters():
-            p.requires_grad = False
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
@@ -448,6 +448,109 @@ def i3_res50_nl(num_classes):
     # net.load_state_dict(state_dict)
     # freeze_bn(net, "net") # Only needed for finetuning. For validation, .eval() works.
     return net
+
+
+
+class dual_resnet3d(nn.Module):
+    def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=400, use_nl=False):
+        self.inplanes = 64
+        super(dual_resnet3d, self).__init__()
+        self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
+        self.bn1 = nn.BatchNorm3d(64)
+        self.relu = nn.ReLU(inplace=True)
+        self.maxpool1 = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
+        self.maxpool2 = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+
+        nonlocal_mod = 2 if use_nl else 1000
+        self.layer1 = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
+        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.drop = nn.Dropout(0.5)
+        self.sigmoid = nn.Sigmoid()
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
+            elif isinstance(m, nn.BatchNorm3d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+    def _make_layer(self, block, planes, blocks, stride, temp_conv, temp_stride, nonlocal_mod=1000):
+        downsample = None
+        if stride != 1 or self.inplanes != planes * block.expansion or temp_stride[0] != 1:
+            downsample = nn.Sequential(
+                nn.Conv3d(self.inplanes, planes * block.expansion, kernel_size=(1, 1, 1),
+                          stride=(temp_stride[0], stride, stride), padding=(0, 0, 0), bias=False),
+                nn.BatchNorm3d(planes * block.expansion)
+            )
+
+        layers = []
+        layers.append(block(self.inplanes, planes, stride, downsample, temp_conv[0], temp_stride[0], False))
+        self.inplanes = planes * block.expansion
+        for i in range(1, blocks):
+            layers.append(block(self.inplanes, planes, 1, None, temp_conv[i], temp_stride[i],
+                                i % nonlocal_mod == nonlocal_mod - 1))
+
+        return nn.Sequential(*layers)
+
+    def forward_single(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool1(x)
+
+        x = self.layer1(x)
+        x = self.maxpool2(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+        return x
+
+    def forward_multi(self, x):
+        clip_preds = []
+        for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224
+            spatial_crops = []
+            for crop_idx in range(x.shape[2]):
+                clip = x[:, clip_idx, crop_idx]
+                clip = self.forward_single(clip)
+                spatial_crops.append(clip)
+            spatial_crops = torch.stack(spatial_crops, 1).mean(1)  # (B, 400)
+            clip_preds.append(spatial_crops)
+        clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
+        return clip_preds
+
+    def forward(self, batch):  ##x[0] is dark x[1] is light
+        x = batch[0]
+        B, N, C, H, W = x.size()
+        x = x.view(B, C, N, H, W)
+        batch = {'frames': x}  ##0 dark 1 light
+        # 5D tensor == single clip
+        if batch['frames'].dim() == 5:
+            pred = self.forward_single(batch['frames'])
+
+        # 7D tensor == 3 crops/10 clips
+        elif batch['frames'].dim() == 7:
+            pred = self.forward_multi(batch['frames'])
+
+        loss_dict = {}
+        if 'label' in batch:
+            loss = F.cross_entropy(pred, batch['label'], reduction='none')
+            loss_dict = {'loss': loss}
+
+        return pred  # , loss_dict
+
+
 if __name__ == '__main__':
     bot = Bottleneck()
     net = i3_res50_nl(400)

@@ -84,6 +84,17 @@ def main(net_opt=None):
         start_stage += 1
 
     # model
+    if opt.netType =="dual_resnet3d":
+        model  = dual_resnet3d(num_classes=opt.numclass, use_nl=True)
+        mydict = model.state_dict()
+        state_dict = torch.load(opt.pretrain)
+        # print(state_dict)
+        pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
+        mydict.update(pretrained_dict)
+        model.load_state_dict(mydict)
+        for p in model.parameters():
+            p.requires_grad = False
+        model.fc = nn.Linear(2048, 1)
     if opt.netType == 'multi_viewCNN':
         model = my_mvcnn(opt.numOfView)
     if opt.netType =="resnet3d":

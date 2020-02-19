@@ -55,8 +55,8 @@ class DataLoader (object):
         imgSize = 244
         # train_dir = data_path + "train.txt"  #
         # test_dir = data_path + "val.txt"  # 数据集尚未划分好，等待修改
-        train_dir = data_path + "val.txt"  #
-        test_dir = data_path + "train.txt"  #
+        train_dir = data_path + "/wide_split/train_all.txt"  #
+        test_dir = data_path + "/wide_split/val_all.txt"  #
         normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
                                           std=[0.189, 0.189, 0.189])
 
