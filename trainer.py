@@ -155,8 +155,8 @@ def computeEval(outputs, labels, pathlist):
         pred = outputs
         y = labels
     # print("pred_after_theshold",pred)
-    pred[pred >= 0.4] = 1
-    pred[pred < 0.4] = 0
+    pred[pred >= 0.5] = 1
+    pred[pred < 0.5] = 0
     ##wrong_image
     for i in range(len(pred)):
         if pred[i]!=y[i]:
@@ -224,6 +224,42 @@ def generateTarget(images, labels):
     reduce_labels = reduce_labels.type_as (images)
     return reduce_labels
 
+class TVLoss(torch.nn.Module): ###for extract structure
+    def __init__(self):
+        super(TVLoss,self).__init__()
+
+    def forward(self,x):
+        h_tv = 0
+        w_tv = 0
+        for i in range(x.size(0)):
+            xt = x[i,...]
+            h_x = xt.size()[2]
+            w_x = xt.size()[3]
+            count_h = self._tensor_size(xt[:,:,1:,:])
+            count_w = self._tensor_size(xt[:,:,:,1:])
+            h_tv += torch.pow((xt[:,:,1:,:]-xt[:,:,:h_x-1,:]),2).sum()
+            w_tv += torch.pow((xt[:,:,:,1:]-xt[:,:,:,:w_x-1]),2).sum()
+        return h_tv/count_h + w_tv/count_w
+
+    def _tensor_size(self,t):
+        return t.size()[1]*t.size()[2]*t.size()[3]*t.size()[0]
+
+class L1norm(torch.nn.Module): ##loss_testure
+    def __init__(self):
+        super(L1norm,self).__init__()
+
+    def forward(self,x):
+        out = 0
+        count = 0
+        for i in range(x.size(0)):
+            xt = x[i, ...]
+            out += torch.sum(torch.abs(xt)).sum()
+            count += self._tensor_size(xt)
+        return out/count
+
+    def _tensor_size(self,t):
+        return t.size()[1]*t.size()[2]*t.size()[3]*t.size()[0]
+
 
 class Trainer (object):
     realLabelsarr = []
@@ -235,6 +271,8 @@ class Trainer (object):
         # print (model)
         if self.opt.trainingType == 'onevsall':
             self.criterion = nn.BCELoss ().cuda ()
+            self.criterion_structure = TVLoss().cuda()
+            self.criterion_testure = L1norm().cuda()
         else:
             self.criterion = nn.CrossEntropyLoss ().cuda ()
         self.lr = self.opt.LR
@@ -267,15 +305,32 @@ class Trainer (object):
         # print("darkinputsize", dark_input_var.size())
         Pair = (dark_input_var, light_input_var)
         # print("pair0size", Pair[0].size())
+        labelsize = labels_var[1].size()
         pairsize = Pair[0].size()
         output = self.model (Pair)
-        outputsize = output.size()
+        outputsize = output[0].size()
         if labels_var is not None :
-            loss = self.criterion (output, labels_var)
+            loss = self.criterion (output[0], labels_var[1])
+            loss1 = self.criterion_structure(output[1])
+            loss2 =  self.criterion_testure(Pair[0]-output[1])
         else:
             loss = None
 
-        return output, loss
+        return output[0], loss+0.001*(loss2+loss1)
+
+
+    # def forward(self, dark_input_var, light_input_var, labels_var=None): ##forward for two_branch
+    #     # forward and backward and optimize   x_opennarrow, x_sysnec labels_opennarrow_var,labels_synechia_var
+    #     Pair = (dark_input_var, light_input_var)
+    #     output = self.model (Pair)
+    #     if labels_var is not None :
+    #         loss1 = self.criterion (output[0], labels_var[0])
+    #         loss2 = self.criterion(output[1], labels_var[1])
+    #         print("loss", loss1, loss2)
+    #     else:
+    #         loss = None
+    #
+    #     return output[0], (0.5*loss1)+loss2
 
     def backward(self, loss):
         self.optimzer.zero_grad ()
@@ -299,23 +354,41 @@ class Trainer (object):
             self.model.train ()
             start_time = time.time ()
             data_time = start_time - end_time
+            """
+            label for two branch
+            
+            """
+            labels_synechia = generateTarget(dark_input, labels[1])
+            reduce_labels_synechia = labels_synechia
+            labels_synechia = labels_synechia.cuda()
+            labels_synechia_var = Variable(labels_synechia)
+
+            labels_opennarrow = generateTarget(dark_input, labels[0])
+            reduce_labels_opennarrow = labels_opennarrow
+            labels_opennarrow = labels_opennarrow.cuda()
+            labels_opennarrow_var = Variable(labels_opennarrow)
+
+
+
             ####  process image
-            labels = generateTarget (dark_input, labels)
-            reduce_labels = labels
-            labels = labels.cuda ()
-            labels_var = Variable(labels)
+            # labels = generateTarget (dark_input, labels[1])
+            # reduce_labels = labels
+            # labels = labels.cuda ()
+            # labels_var = Variable(labels)
 
 
 
             dark_var = Variable(dark_input.cuda ())
             light_var = Variable (light_input.cuda ())
 
-            output, loss = self.forward (dark_var, light_var, labels_var)
+            # output, loss = self.forward (dark_var, light_var, labels_var)
+            output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var,labels_synechia_var))
 
             prediction = output.data.cpu ()
 
             output_list.append (prediction.numpy ())
-            label_list.append (reduce_labels.cpu ().numpy ())
+            # label_list.append (reduce_labels.cpu ().numpy ())
+            label_list.append(reduce_labels_synechia.cpu().numpy())
 
             self.backward (loss)
             loss_sum += float (loss.data)
@@ -347,13 +420,26 @@ class Trainer (object):
             start_time = time.time ()
             data_time = start_time - end_time
 
-            labels = generateTarget (dark_input, labels)
-            reduce_labels = labels
-            labels = labels.cuda ()
+            # labels = generateTarget (dark_input, labels[1])
+            # reduce_labels = labels
+            # labels = labels.cuda ()
+
+            labels_synechia = generateTarget(dark_input, labels[1])
+            reduce_labels_synechia = labels_synechia
+            labels_synechia = labels_synechia.cuda()
+            labels_synechia_var = Variable(labels_synechia)
+
+            labels_opennarrow = generateTarget(dark_input, labels[0])
+            reduce_labels_opennarrow = labels_opennarrow
+            labels_opennarrow = labels_opennarrow.cuda()
+            labels_opennarrow_var = Variable(labels_opennarrow)
 
 
             with torch.no_grad ():
-                labels_var = Variable (labels)
+                # labels_var = Variable (labels)
+                labels_synechia_var = Variable(labels_synechia_var)
+                labels_opennarrow_var = Variable(labels_opennarrow_var)
+
 
             dark_input= dark_input.cuda ()
             light_input=light_input.cuda()
@@ -362,11 +448,14 @@ class Trainer (object):
                 light_var = Variable (light_input)
 
 
-            output, loss = self.forward (dark_var, light_var, labels_var)
+            # output, loss = self.forward (dark_var, light_var, labels_var)
+            output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var, labels_synechia_var))
+
             loss_sum += float(loss.data)/iters
             prediction = output.data.cpu ()
             output_list.append (prediction.numpy ())
-            label_list.append (reduce_labels.cpu ().numpy ())
+            # label_list.append (reduce_labels.cpu ().numpy ())
+            label_list.append (reduce_labels_synechia.cpu ().numpy ())
             end_time = time.time ()
             iter_time = end_time - start_time
 

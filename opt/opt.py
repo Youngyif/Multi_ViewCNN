@@ -15,8 +15,8 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 1  # number of GPUs to use by default
-        self.GPU = 2# default gpu to use, options: range(nGPU)
+        self.nGPU = 8  # number of GPUs to use by default
+        self.GPU = 0# default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -28,7 +28,7 @@ class NetOption (object):
 
         # ---------- Optimization options -------------------------------------
         self.nEpochs = 80  # number of total epochs to train
-        self.batchSize = 4  # mini-batch size
+        self.batchSize = 8  # mini-batch size
         self.LR = 0.001  # initial learning rate
         self.lrPolicy = "multistep"  # options: multistep | linear | exp
         self.momentum = 0.9  # momentum
@@ -38,8 +38,8 @@ class NetOption (object):
 
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
-        self.netType = "dual_resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d
-        self.experimentID = "half_opennarrow_fixBeforeFc_0219"
+        self.netType = "resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d
+        self.experimentID = "half_extract_resnet3d_0223"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
@@ -55,7 +55,7 @@ class NetOption (object):
         # self.retrain = "/mnt/dataset/model/darklight/log_asoct_Single_viewCNN_18_onevsall_bs16_half_mvcmm_twostage_pretrain_0213/model/best_model.pkl"
         # self.pretrain = None
         self.pretrain = "/home/yangyifan/code/pytorch-resnet3d/pretrained/i3d_r50_nl_kinetics.pth"
-
+        # self.pretrain = "/mnt/dataset/model/darklight/log_asoct_dual_resnet3d_18_onevsall_bs4_half_opennarrow_fixBeforeFc_0219/model/best_model.pkl"
         # check parameters
         self.paramscheck ()
 

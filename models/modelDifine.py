@@ -364,6 +364,7 @@ class resnet3d(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
+        self.extract = ConvBlock(3,3)
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
                 m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
@@ -390,6 +391,10 @@ class resnet3d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward_single(self, x):
+        x = self.extract(x)
+        x_structure = x
+        B,N,C,H,W = x.size()
+        x = x.view(B,C,N,H,W)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -407,7 +412,7 @@ class resnet3d(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
         x = self.sigmoid(x)
-        return x
+        return (x, x_structure)
 
     def forward_multi(self, x):
         clip_preds = []
@@ -469,7 +474,7 @@ class dual_resnet3d(nn.Module):
                                        temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.fc1 = nn.Linear(512 * block.expansion, num_classes)
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
         for m in self.modules():
@@ -478,6 +483,43 @@ class dual_resnet3d(nn.Module):
             elif isinstance(m, nn.BatchNorm3d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
+        if opt.pretrain:
+            print("pretrain model >>>>>>")
+            retrain = torch.load(opt.pretrain)["model"]
+            if isinstance(retrain, nn.DataParallel):
+                # a = retrain
+                self.conv1 = retrain.module.conv1p
+                self.bn1 = retrain.module.bn1
+                self.relu = retrain.module.relu
+                self.maxpool1 = retrain.module.maxpool1
+                self.maxpool2 = retrain.module.maxpool2
+                self.layer1 = retrain.module.layer1
+                self.layer2 = retrain.module.layer2
+                self.layer3_o = retrain.module.layer3
+                self.layer4_o = retrain.module.layer4
+                self.avgpool_o = retrain.module.avgpool
+                self.fc_o = retrain.module.fc
+
+                self.layer3_s = retrain.module.layer3
+                self.layer4_s = retrain.module.layer4
+                self.avgpool_s = retrain.module.avgpool
+                self.fc_s = retrain.module.fc
+                # self.model = retrain.module.model
+            else:
+                a = retrain
+                self.conv1 = retrain.conv1
+                self.bn1 = retrain.bn1
+                self.relu = retrain.relu
+                self.maxpool1 = retrain.maxpool1
+                self.maxpool2 = retrain.maxpool2
+                self.layer1 = retrain.layer1
+                self.layer2 = retrain.layer2
+                self.layer3 = retrain.layer3
+                self.layer4 = retrain.layer4
+                self.avgpool = retrain.avgpool
+                self.fc = retrain.fc
+                # self.model = retrain.model
+        self.extract = ConvBlock(3,3)
 
     def _make_layer(self, block, planes, blocks, stride, temp_conv, temp_stride, nonlocal_mod=1000):
         downsample = None
@@ -498,6 +540,8 @@ class dual_resnet3d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward_single(self, x):
+        x = self.extract(x)
+        x_structure = x
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -506,16 +550,29 @@ class dual_resnet3d(nn.Module):
         x = self.layer1(x)
         x = self.maxpool2(x)
         x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        x_o = self.layer3_o(x)
+        x_o = self.layer4_o(x_o)
 
-        x = self.avgpool(x)
-        x = self.drop(x)
+        x_o = self.avgpool_o(x_o)  ##x_o for opennarrow   x_s for synechia
+        x_o = self.drop(x_o)
+        x_o = x_o.view(x_o.shape[0], -1)
+        x_o = self.fc(x_o)
+        x_o = self.sigmoid(x_o)
+        #####
+        x_s = self.layer3_s(x)
+        x_s = self.layer4_s(x_s)
 
-        x = x.view(x.shape[0], -1)
-        x = self.fc(x)
-        x = self.sigmoid(x)
-        return x
+        x_s = self.avgpool_s(x_s)
+        x_s = self.drop(x_s)
+        x_s = x_s.view(x_s.shape[0], -1)
+        x_s = self.fc1(x_s)
+        x_s = self.sigmoid(x_s)
+        #####
+
+
+
+
+        return (x_o, x_s, x_structure)
 
     def forward_multi(self, x):
         clip_preds = []
@@ -551,8 +608,61 @@ class dual_resnet3d(nn.Module):
         return pred  # , loss_dict
 
 
+class ConvBlock(nn.Module):  ###结构提取代码
+    def __init__(self, n_in=64, n_out=3):
+        super(ConvBlock, self).__init__()
+
+        self.cov_block = nn.Sequential(
+            nn.Conv2d(in_channels=n_in, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1, bias=False),
+            # nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=n_out, kernel_size=3, stride=1, padding=1, bias=False),
+        )
+
+    def forward(self, x):
+        output = []
+        for i in range(x.size(0)):
+            C,N,H,W = x[i,...].size()
+            output.append(self.cov_block(x[i,...].view(N,C,H,W)))
+        return torch.stack(output)
+
 if __name__ == '__main__':
-    bot = Bottleneck()
-    net = i3_res50_nl(400)
-    inp = {'frames': torch.rand(4, 3, 32, 224, 224)}
-    pred, losses = net(inp)
+    extract = ConvBlock(3,3)
+
+    # net = i3_res50_nl(400)
+    # inp = {'frames': torch.rand(4, 3, 32, 224, 224)}
+    # pred, losses = net(inp)
+    # if opt.netType =="dual_resnet3d":
+    #     model = dual_resnet3d(num_classes=opt.numclass, use_nl=True)
+    #     mydict = model.state_dict()
+    #     print(opt.pretrain)
+    #     a = torch.load(opt.pretrain)
+    #     state_dict = torch.load(opt.pretrain)["model"]
+    #     # state_dict = model.load_state_dict(a["model"])
+    #     print(type(state_dict))
+    #     pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
+    #     mydict.update(pretrained_dict)
+    #     # a = mydict
+    #     model.load_state_dict(mydict)
+    #     for p in model.parameters():
+    #         p.requires_grad = False
+    #     model.fc = nn.Linear(2048, 1)

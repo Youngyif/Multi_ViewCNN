@@ -24,12 +24,12 @@ def make_dataset(rootpath, root, label_df):
     images_dark = []
     for line in open (root):
         org_path = line.strip ('\n')
-        label = label_df.loc[org_path, "synechia"]
+        labelsyne = label_df.loc[org_path, "synechia"]
         """
         尝试一下分类宽窄角
         """
         labelopennarrow = label_df.loc[org_path, "openORnarrow"]
-        label = labelopennarrow
+        label = (labelopennarrow, labelsyne) ###label[0] opennarrow label[1] sysnechia
         #####
         eyeid = org_path.split ("_")[0]
         odos = org_path.split ("_")[1]
