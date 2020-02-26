@@ -305,14 +305,15 @@ class Trainer (object):
         # print("darkinputsize", dark_input_var.size())
         Pair = (dark_input_var, light_input_var)
         # print("pair0size", Pair[0].size())
-        labelsize = labels_var[1].size()
-        pairsize = Pair[0].size()
+        # labelsize = labels_var[1].size()
+        # pairsize = Pair[0].size()
         output = self.model (Pair)
-        outputsize = output[0].size()
-        if labels_var is not None :
+        # outputsize = output[0].size()
+        if labels_var is not None :  ##(x, x_structure)  labelopennarrow, labelsyne
             loss = self.criterion (output[0], labels_var[1])
+            # loss0 = self.criterion(output[0], labels_var[0])
             loss1 = self.criterion_structure(output[1])
-            loss2 =  self.criterion_testure(Pair[0]-output[1])
+            loss2 = self.criterion_testure(Pair[0]-output[1])
         else:
             loss = None
 

@@ -1,7 +1,100 @@
 import torch
 import torchvision.transforms as transforms
 from dataloader.myloader import  Myloader
+from PIL import Image
+import numpy as np
+import random
 
+class RandomGammaCorrection():
+    def __init__(self):
+        self.gamma = 1.0
+
+    def __call__(self, img):
+        img = np.asarray(img)
+        img = np.power(img / 255.0, self.gamma)
+        img = np.uint8(img * 255.0)
+
+        return Image.fromarray(img)
+
+
+    def randomize_parameters(self, custom_extend=None):
+        self.gamma = np.random.uniform(1, 2, 1)
+        if random.random() < 0.5:
+            self.gamma = 1 / self.gamma
+
+class VerticalCrop(object):
+
+    def __init__(self, size, interpolation=Image.BILINEAR):
+        self.size = size
+        self.interpolation = interpolation
+        self.vertical_center = None
+        self.ratio = 0.05
+        self.hwr = 1.2
+
+    def __call__(self, img):
+        image_width = img.size[0]
+        image_height = img.size[1]
+        vertical_center = self.vertical_center + int(self.ratio * image_width)
+        crop_height = image_width * self.hwr
+        if vertical_center - crop_height // 2 < 0:
+            x1 = 0
+            y1 = 0
+            x2 = image_width
+            y2 = crop_height
+        elif vertical_center + crop_height // 2 > image_height:
+            x1 = 0
+            y1 = image_height - crop_height
+            x2 = image_width
+            y2 = image_height
+        else:
+            x1 = 0
+            y1 = vertical_center - crop_height // 2
+            x2 = image_width
+            y2 = vertical_center + crop_height // 2
+
+        img = img.crop((x1, y1, x2, y2))
+
+        return img.resize((self.size, self.size), self.interpolation)
+
+    def randomize_parameters(self, vertical_center):
+        """
+        custom_extend: vertical center coordinate for estimated spur sceleral position.
+        """
+        self.vertical_center = vertical_center
+
+class RandomVerticalCrop(object):
+
+    def __init__(self, size,interpolation=Image.BILINEAR):
+        self.size = size
+        self.interpolation = interpolation
+        self.vertical_center = None
+        self.ratio = 0.05
+        self.hwr = 1.2
+
+    def __call__(self, img):
+        image_width = img.size[0]
+        image_height = img.size[1]
+        vertical_center = self.vertical_center + int(self.ratio * image_width)
+        crop_height = image_width * self.hwr
+        if vertical_center - crop_height // 2 < 0:
+            x1 = 0
+            y1 = 0
+            x2 = image_width
+            y2 = crop_height
+        elif vertical_center + crop_height // 2 > image_height:
+            x1 = 0
+            y1 = image_height - crop_height
+            x2 = image_width
+            y2 = image_height
+        else:
+            x1 = 0
+            y1 = vertical_center - crop_height // 2
+            x2 = image_width
+            y2 = vertical_center + crop_height // 2
+
+        img = img.crop((x1, y1, x2, y2))
+
+        return img.resize((self.size, self.size), self.interpolation)
 
 class DataLoader (object):
     def __init__(self, dataset, data_path, label_path, batch_size, rootpath, n_threads=4, ten_crop=False, dataset_ratio=1.0):
@@ -28,28 +121,28 @@ class DataLoader (object):
         else:
             return self.train_loader, self.test_loader
 
-    def asoct_data_val(self, data_path, label_path, rootpath):
-        imgSize = 244
-        # test_dir = data_path + "test.txt"
-        test_dir = data_path + "trainval.txt"
-
-        normalize = transforms.Normalize(mean=[0.146, 0.146, 0.146],
-                                         std=[0.193, 0.193, 0.193])
-
-        test_transform = transforms.Compose ([
-            # transforms.Scale(600),
-            transforms.Scale (244),
-            transforms.CenterCrop (imgSize),
-            transforms.ToTensor (),
-            normalize,
-        ])
-        test_loader = torch.utils.data.DataLoader (
-            Myloader (rootpath, test_dir, label_path, test_transform),
-            batch_size=self.batch_size,
-            shuffle=True,
-            num_workers=self.n_threads,
-            pin_memory=False)
-        return test_loader
+    # def asoct_data_val(self, data_path, label_path, rootpath):
+    #     imgSize = 244
+    #     # test_dir = data_path + "test.txt"
+    #     test_dir = data_path + "trainval.txt"
+    #
+    #     normalize = transforms.Normalize(mean=[0.146, 0.146, 0.146],
+    #                                      std=[0.193, 0.193, 0.193])
+    #
+    #     test_transform = transforms.Compose ([
+    #         # transforms.Scale(600),
+    #         transforms.Scale (244),
+    #         transforms.CenterCrop (imgSize),
+    #         transforms.ToTensor (),
+    #         normalize,
+    #     ])
+    #     test_loader = torch.utils.data.DataLoader (
+    #         Myloader (rootpath, test_dir, label_path, test_transform),
+    #         batch_size=self.batch_size,
+    #         shuffle=True,
+    #         num_workers=self.n_threads,
+    #         pin_memory=False)
+    #     return test_loader
 
     def asoct_data(self, data_path, label_path, rootpath):
         imgSize = 244
@@ -59,7 +152,6 @@ class DataLoader (object):
         test_dir = data_path + "/wide_split/val_all.txt"  #
         normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
                                           std=[0.189, 0.189, 0.189])
-
         imagenet_pca = {
             'eigval': torch.Tensor ([0.2175, 0.0188, 0.0045]),
             'eigvec': torch.Tensor ([

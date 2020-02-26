@@ -108,6 +108,15 @@ def main(net_opt=None):
         model.load_state_dict(mydict)
     if opt.netType =="lstm_mvcnn":
         model = my_mvcnn_lstm(opt.numOfView)
+    if opt.netType =="dual_extract_resnet3d":
+        model = dual_extract_resnet3d(num_classes=opt.numclass, use_nl=True)
+        mydict = model.state_dict()
+        state_dict = torch.load(opt.pretrain)
+        # print(state_dict)
+        pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
+        mydict.update(pretrained_dict)
+        model.load_state_dict(mydict)
+
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
     trainer = Trainer (model=model, opt=opt, optimizer=optimizer)
