@@ -10,7 +10,8 @@ class NetOption (object):
         self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
         # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/label_version/v2_exisit_noaloneclock_half_3d_label.csv"
-        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/label for all/label_half_opennarrow.csv"
+        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/label_quarter.csv"
+        # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/label for all/label_half_opennarrow.csv"
         self.rootpath = "/mnt/dataset/splited_Casia2"
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
@@ -39,7 +40,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d
-        self.experimentID = "half_crop_extract_resnet3d_0226"
+        self.experimentID = "quarter_crop_dark_resnet3d_0227"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10

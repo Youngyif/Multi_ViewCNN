@@ -310,14 +310,14 @@ class Trainer (object):
         output = self.model (Pair)
         # outputsize = output[0].size()
         if labels_var is not None :  ##(x, x_structure)  labelopennarrow, labelsyne
-            loss = self.criterion (output[0], labels_var[1])
+            loss = self.criterion (output, labels_var)
             # loss0 = self.criterion(output[0], labels_var[0])
-            loss1 = self.criterion_structure(output[1])
-            loss2 = self.criterion_testure(Pair[0]-output[1])
+            # loss1 = self.criterion_structure(output[1])
+            # loss2 = self.criterion_testure(Pair[0]-output[1])
         else:
             loss = None
 
-        return output[0], loss+0.001*(loss2+loss1)
+        return output, loss#+0.001*(loss2+loss1)
 
 
     # def forward(self, dark_input_var, light_input_var, labels_var=None): ##forward for two_branch
@@ -359,16 +359,15 @@ class Trainer (object):
             label for two branch
             
             """
-            labels_synechia = generateTarget(dark_input, labels[1])
+            labels_synechia = generateTarget(dark_input, labels)
             reduce_labels_synechia = labels_synechia
             labels_synechia = labels_synechia.cuda()
-            labels_synechia_var = Variable(labels_synechia)
+            labels_var = Variable(labels_synechia)
 
-            labels_opennarrow = generateTarget(dark_input, labels[0])
-            reduce_labels_opennarrow = labels_opennarrow
-            labels_opennarrow = labels_opennarrow.cuda()
-            labels_opennarrow_var = Variable(labels_opennarrow)
-
+            # labels_opennarrow = generateTarget(dark_input, labels[0])
+            # reduce_labels_opennarrow = labels_opennarrow
+            # labels_opennarrow = labels_opennarrow.cuda()
+            # labels_opennarrow_var = Variable(labels_opennarrow)
 
 
             ####  process image
@@ -382,8 +381,8 @@ class Trainer (object):
             dark_var = Variable(dark_input.cuda ())
             light_var = Variable (light_input.cuda ())
 
-            # output, loss = self.forward (dark_var, light_var, labels_var)
-            output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var,labels_synechia_var))
+            output, loss = self.forward (dark_var, light_var, labels_var)
+            # output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var,labels_synechia_var))
 
             prediction = output.data.cpu ()
 
@@ -427,6 +426,7 @@ class Trainer (object):
 
             labels_synechia = generateTarget(dark_input, labels[1])
             reduce_labels_synechia = labels_synechia
+
             labels_synechia = labels_synechia.cuda()
             labels_synechia_var = Variable(labels_synechia)
 

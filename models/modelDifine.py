@@ -391,10 +391,10 @@ class resnet3d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward_single(self, x):
-        x = self.extract(x)
-        x_structure = x
-        B,N,C,H,W = x.size()
-        x = x.view(B,C,N,H,W)
+        # x = self.extract(x)
+        # x_structure = x
+        # B,N,C,H,W = x.size()
+        # x = x.view(B,C,N,H,W)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -412,7 +412,8 @@ class resnet3d(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
         x = self.sigmoid(x)
-        return (x, x_structure)
+        # return (x, x_structure)
+        return x
 
     def forward_multi(self, x):
         clip_preds = []
