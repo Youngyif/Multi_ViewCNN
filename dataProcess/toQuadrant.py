@@ -1,7 +1,7 @@
 import pandas as pd
 
 def splitdata():
-    lists = list(open("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/val_all.txt").readlines())
+    lists = list(open("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/one_openandnarrow_split/train_all.txt").readlines())
     print(lists)
     finallist = []
     for i in lists:
@@ -9,7 +9,7 @@ def splitdata():
         if index in ["0","1"]:
             finallist.append(i)
     print(finallist,len(finallist))
-    f = open("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/val_quater.txt", "a")
+    f = open("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/train_quater1.txt", "a")
     for i in finallist:
         f.writelines(i)
 
@@ -84,5 +84,5 @@ def changelabels1():
 
 
 if __name__ == '__main__':
-    # splitdata1()
-    changelabels1()
+    splitdata()
+    # changelabels1()

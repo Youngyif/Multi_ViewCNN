@@ -8,17 +8,17 @@ class NetOption (object):
         #  ------------ General options ---------------------------------------
         self.save_head_path = "/mnt/dataset/model/darklight/"  # where to save model and log code etc
         self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
-        # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/3dlabel_only_narrow.csv"
+        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/3dlabel_open_narrow.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/label_version/v2_exisit_noaloneclock_half_3d_label.csv"
-        self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/label_quarter.csv"
+        # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/label_quarter.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/label for all/label_half_opennarrow.csv"
         self.rootpath = "/mnt/dataset/splited_Casia2"
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 8  # number of GPUs to use by default
+        self.nGPU = 1  # number of GPUs to use by default
         self.GPU = 0# default gpu to use, options: range(nGPU)
-        self.datasetRatio = 1.0  # greedy increasing training data for cifar10
+        self.datasetRatio = 1.0  # greedyincreasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
         self.nThreads = 10  # number of data loader threads
@@ -29,7 +29,7 @@ class NetOption (object):
 
         # ---------- Optimization options -------------------------------------
         self.nEpochs = 80  # number of total epochs to train
-        self.batchSize = 8  # mini-batch size
+        self.batchSize = 4  # mini-batch size
         self.LR = 0.001  # initial learning rate
         self.lrPolicy = "multistep"  # options: multistep | linear | exp
         self.momentum = 0.9  # momentum
@@ -40,15 +40,19 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d
-        self.experimentID = "quarter_crop_dark_resnet3d_0227"
+        self.experimentID = "one_realcrop_attention_resnet3d_0304"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
+        # self.cat = True
+        self.cat = False
+        self.structure = False
+        self.attention = True
         # ---------- Resume or Retrain options --------------------------------
         ##v3
 
         # self.retrain = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/pretrain/checkpoint18.pkl"## load model for output
-        # self.retrain = [self.model1]  # path to model to retrain with
+        # self.retrain = [self.model1]  # path to model to retsrain with
         self.retrain = None  # path to model to retrain with
         self.resume = None  # path to directory containing checkpoint
         # self.resume = "/usr/home2/code/jingwen_code_oct_cropped/as-oct/log_asoct_ResNet_18_onevsall_bs8_addpad_9.6_3foldType=1-lr=0.01/model/checkpoint7.pkl"

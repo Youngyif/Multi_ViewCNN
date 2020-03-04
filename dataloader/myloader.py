@@ -84,8 +84,8 @@ def make_dataset(rootpath, root, label_df):
         """
         尝试一下分类宽窄角
         """
-        labelopennarrow = label_df.loc[org_path, "openORnarrow"]
-        label = (labelopennarrow, labelsyne) ###label[0] opennarrow label[1] sysnechia
+        # labelopennarrow = label_df.loc[org_path, "openORnarrow"]
+        label =  labelsyne ###sysnechia
         #####
         eyeid = org_path.split ("_")[0]
         odos = org_path.split ("_")[1]
@@ -100,8 +100,12 @@ def make_dataset(rootpath, root, label_df):
         lightrealpath = realpath + "/L/"
         lightrealpath += str (int (indexs / 2))
         darkrealpath += str (int (indexs / 2))
-        vertical_light = int(np.load(lightrealpath + "/vertical.npy"))
-        vertical_dark = int(np.load(darkrealpath + "/vertical.npy"))
+        if region =="left":
+            vertical_light = int(np.load(lightrealpath + "/vertical_l.npy"))
+            vertical_dark = int(np.load(darkrealpath + "/vertical_l.npy"))
+        if region =="right":
+            vertical_light = int(np.load(lightrealpath + "/vertical_r.npy"))
+            vertical_dark = int(np.load(darkrealpath + "/vertical_r.npy"))
         all_image_path = list (os.listdir (lightrealpath))
         all_image_path.sort ()
         if indexs / 2 - int (indexs / 2) == 0.5:
@@ -141,7 +145,9 @@ def make3d(tup, transform):   #tup:([10 images], label, region)
         crop_image = np.asarray(vrc(orgimage))
         crop_image = np.asarray(rgc(crop_image))
         img = Image.fromarray(crop_image, 'RGB')
-        img.save('/home/yangyifan/save/crop.jpg')
+        if region =="right":
+            img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            # img.save('/home/yangyifan/save/crop.jpg')
         imglist.append(transform(img))
         #imgs = [transform (np.asarray(vrc(Image.open (rootpath + "/" + imgpath).convert ("RGB").crop (regionCor)))) for imgpath in lists]
     input = torch.stack (imglist)

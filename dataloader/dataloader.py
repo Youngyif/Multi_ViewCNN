@@ -1,6 +1,6 @@
 import torch
 import torchvision.transforms as transforms
-from dataloader.myloader_quarter import  Myloader
+from dataloader.myloader_one_clock import  Myloader
 from PIL import Image
 import numpy as np
 import random
@@ -146,12 +146,12 @@ class DataLoader (object):
 
     def asoct_data(self, data_path, label_path, rootpath):
         imgSize = 244
-        # train_dir = data_path + "train.txt"  #
-        # test_dir = data_path + "val.txt"  # 数据集尚未划分好，等待修改
+        train_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/train_all.txt"
+        test_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/val_all.txt"
         # train_dir = data_path + "/wide_split/train_all.txt"  #
         # test_dir = data_path + "/wide_split/val_all.txt"  #
-        train_dir = data_path + "/wide_split/quartersplit/train_quater.txt"  #
-        test_dir = data_path + "/wide_split/quartersplit/val_quater.txt"  #
+        # train_dir = data_path + "/wide_split/quartersplit/train_quater.txt"  #
+        # test_dir = data_path + "/wide_split/quartersplit/val_quater.txt"  #
         normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
                                           std=[0.189, 0.189, 0.189])
         imagenet_pca = {

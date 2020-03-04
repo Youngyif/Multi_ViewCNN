@@ -310,14 +310,19 @@ class Trainer (object):
         output = self.model (Pair)
         # outputsize = output[0].size()
         if labels_var is not None :  ##(x, x_structure)  labelopennarrow, labelsyne
-            loss = self.criterion (output, labels_var)
-            # loss0 = self.criterion(output[0], labels_var[0])
-            # loss1 = self.criterion_structure(output[1])
-            # loss2 = self.criterion_testure(Pair[0]-output[1])
+            if opt.structure ==True:
+
+                loss = self.criterion (output[0], labels_var)
+                loss1 = self.criterion_structure(output[1])
+                loss2 = self.criterion_testure(Pair[0]-output[1])
+            if opt.structure ==False:
+                loss = self.criterion (output, labels_var)
         else:
             loss = None
-
-        return output, loss#+0.001*(loss2+loss1)
+        if opt.structure == True:
+            return output[0], loss+0.001*(loss1)#+loss2)
+        if opt.structure == False:
+            return output, loss
 
 
     # def forward(self, dark_input_var, light_input_var, labels_var=None): ##forward for two_branch
@@ -424,22 +429,22 @@ class Trainer (object):
             # reduce_labels = labels
             # labels = labels.cuda ()
 
-            labels_synechia = generateTarget(dark_input, labels[1])
+            labels_synechia = generateTarget(dark_input, labels)
             reduce_labels_synechia = labels_synechia
 
             labels_synechia = labels_synechia.cuda()
-            labels_synechia_var = Variable(labels_synechia)
+            labels_var = Variable(labels_synechia)
 
-            labels_opennarrow = generateTarget(dark_input, labels[0])
-            reduce_labels_opennarrow = labels_opennarrow
-            labels_opennarrow = labels_opennarrow.cuda()
-            labels_opennarrow_var = Variable(labels_opennarrow)
+            # labels_opennarrow = generateTarget(dark_input, labels[0])
+            # reduce_labels_opennarrow = labels_opennarrow
+            # labels_opennarrow = labels_opennarrow.cuda()
+            # labels_opennarrow_var = Variable(labels_opennarrow)
 
 
             with torch.no_grad ():
                 # labels_var = Variable (labels)
-                labels_synechia_var = Variable(labels_synechia_var)
-                labels_opennarrow_var = Variable(labels_opennarrow_var)
+                labels_var = Variable(labels_var)
+                # labels_opennarrow_var = Variable(labels_opennarrow_var)
 
 
             dark_input= dark_input.cuda ()
@@ -450,7 +455,7 @@ class Trainer (object):
 
 
             # output, loss = self.forward (dark_var, light_var, labels_var)
-            output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var, labels_synechia_var))
+            output, loss = self.forward(dark_var, light_var, labels_var)
 
             loss_sum += float(loss.data)/iters
             prediction = output.data.cpu ()

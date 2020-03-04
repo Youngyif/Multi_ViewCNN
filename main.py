@@ -106,6 +106,9 @@ def main(net_opt=None):
         pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight'] }
         mydict.update(pretrained_dict)
         model.load_state_dict(mydict)
+        # for param in model.parameters():  # nn.Module有成员函数parameters()
+        #     param.requires_grad = False  ##固定所有层
+        # model.fc = nn.Linear(512*4, 1)
     if opt.netType =="lstm_mvcnn":
         model = my_mvcnn_lstm(opt.numOfView)
     if opt.netType =="dual_extract_resnet3d":
@@ -172,5 +175,6 @@ def main(net_opt=None):
 if __name__ == '__main__':
     # main()
     main_opt = NetOption ()  ##class NetOption()
+    print(">>>>running experiment:", main_opt.experimentID)
     main_opt.paramscheck ()
     main (main_opt)

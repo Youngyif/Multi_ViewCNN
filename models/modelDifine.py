@@ -7,6 +7,8 @@ import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
 from opt.opt import *
+from torch.autograd import Variable
+from models.box_filter import BoxFilter
 
 opt = NetOption()
 
@@ -347,6 +349,12 @@ class resnet3d(nn.Module):
     def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=400, use_nl=False):
         self.inplanes = 64
         super(resnet3d, self).__init__()
+
+        self.gf = FastGuidedFilter_attention(r=2, eps=0.01)
+
+        # attention blocks
+        self.attentionblock5 = GridAttentionBlock(in_channels=1024)
+
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -361,7 +369,10 @@ class resnet3d(nn.Module):
                                        temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        n=1
+        if opt.cat ==True:
+            n=2
+        self.fc = nn.Linear(n*512 * block.expansion, num_classes)
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
         self.extract = ConvBlock(3,3)
@@ -391,10 +402,11 @@ class resnet3d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward_single(self, x):
-        # x = self.extract(x)
-        # x_structure = x
-        # B,N,C,H,W = x.size()
-        # x = x.view(B,C,N,H,W)
+        if opt.structure == True:
+            x = self.extract(x)
+            x_structure = x
+            B,N,C,H,W = x.size()
+            x = x.view(B,C,N,H,W)
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -412,8 +424,108 @@ class resnet3d(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
         x = self.sigmoid(x)
-        # return (x, x_structure)
+        if opt.structure ==True:
+            return (x, x_structure)
         return x
+    def forward_single_cat(self, x):
+        if opt.structure == True:
+            x = self.extract(x)
+            x_structure = x
+            B,N,C,H,W = x.size()
+            x = x.view(B,C,N,H,W)
+        x_d,x_l = x
+        x_d = self.conv1(x_d)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+
+        x_d = self.layer1(x_d)
+        x_d = self.maxpool2(x_d)
+        x_d = self.layer2(x_d)
+        x_d = self.layer3(x_d)
+        x_d = self.layer4(x_d)
+
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
+        x_l = self.layer4(x_l)
+        x = torch.cat((x_l,x_d),dim=1)
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+        if opt.structure == True:
+            return (x, x_structure)
+        return x
+
+    def attention_forward_single(self, x):
+        # if opt.structure == True:
+        #     x = self.extract(x)
+        #     x_structure = x
+        #     B,N,C,H,W = x.size()
+        #     x = x.view(B,C,N,H,W)
+
+        x_d, x_l = x
+        # print(x_d.size())
+        x_d = self.conv1(x_d)
+        # xsize = x_d.size()
+        # print("conv1", xsize)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+        # xsize = x_d.size()
+        # print("beforelayer1", xsize)
+        x_d = self.layer1(x_d)
+        # xsize = x_d.size()
+        # print("afterlayer1", xsize)
+        x_d = self.maxpool2(x_d)
+        # xsize = x_d.size()
+        # print("aftermaxpool", xsize)
+        x_d = self.layer2(x_d)
+        # xsize = x_d.size()
+        # print("afterlayer2", xsize)
+        x_d = self.layer3(x_d)
+        # xsize = x_d.size()
+        # print("afterlayer3", xsize)
+        # x_d = self.layer4(x_d)
+
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
+        # x_l = self.layer4(x_l)
+        # print(x_l.size())
+        B, C, N, H, W = x_l.size()
+        output = []
+        for i in range(N):
+            x_dn = x_d[:, :, i, ...]
+            x_ln = x_l[:, :, i, ...]
+            x = self.gf(x_dn, x_ln, x_ln, self.attentionblock5(x_dn, x_ln))
+            output.append(x.view(B, C, 1, H, W))
+        # print("dimension of output",len(output),output[0].size())
+        x = torch.cat(output, dim=2)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+        # if opt.structure == True:
+        #     return (x, x_structure)
+        return x
+
 
     def forward_multi(self, x):
         clip_preds = []
@@ -429,17 +541,29 @@ class resnet3d(nn.Module):
         return clip_preds
 
     def forward(self, batch):##x[0] is dark x[1] is light
-        x=batch[0]
-        B,N,C,H,W = x.size()
-        x = x.view(B,C,N,H,W)
+        # x=batch[1]
+        # B,N,C,H,W = x.size()
+        # x = x.view(B,C,N,H,W)
+        x_l = batch[1]
+        x_d = batch[0]
+        B, N, C, H, W = x_l.size()
+        x = (x_d.view(B, C, N, H, W), x_l.view(B, C, N, H, W))
         batch = {'frames': x} ##0 dark 1 light
         # 5D tensor == single clip
-        if batch['frames'].dim() == 5:
-            pred = self.forward_single(batch['frames'])
+        if opt.cat == True:
+            # if batch['frames'].dim() == 5:
+            # print("catmodel")
+            pred = self.forward_single_cat(batch['frames'])
+        if opt.cat == False:
+            if opt.attention ==True:
+                # print("attention")
+                pred = self.attention_forward_single(batch['frames'])
+            else:
+                pred = self.forward_single(batch['frames'][0])###0 denotes dark 1denotes light
 
         # 7D tensor == 3 crops/10 clips
-        elif batch['frames'].dim() == 7:
-            pred = self.forward_multi(batch['frames'])
+        # elif batch['frames'].dim() == 7:
+        #     pred = self.forward_multi(batch['frames'])
 
         loss_dict = {}
         if 'label' in batch:
@@ -455,7 +579,124 @@ def i3_res50_nl(num_classes):
     # freeze_bn(net, "net") # Only needed for finetuning. For validation, .eval() works.
     return net
 
+class FastGuidedFilter_attention(nn.Module):
+    def __init__(self, r, eps=1e-8):
+        super(FastGuidedFilter_attention, self).__init__()
 
+        self.r = r
+        self.eps = eps
+        self.boxfilter = BoxFilter(r)
+        self.epss = 1e-12
+
+    def forward(self, lr_x, lr_y, hr_x, l_a):
+        n_lrx, c_lrx, h_lrx, w_lrx = lr_x.size()
+        n_lry, c_lry, h_lry, w_lry = lr_y.size()
+        n_hrx, c_hrx, h_hrx, w_hrx = hr_x.size()
+        # print(lr_x.shape)
+        # print(lr_y.shape)
+        # print(hr_x.shape)
+        lr_x = lr_x.double()
+        lr_y = lr_y.double()
+        hr_x = hr_x.double()
+        l_a = l_a.double()
+
+        assert n_lrx == n_lry and n_lry == n_hrx
+        # assert c_lrx == c_hrx and (c_lrx == 1 or c_lrx == c_lry)
+        assert c_lrx == c_hrx and (c_lrx == 1 or c_lrx == c_lry or c_lry ==1)
+        assert h_lrx == h_lry and w_lrx == w_lry
+        assert h_lrx > 2*self.r+1 and w_lrx > 2*self.r+1
+
+        ## N
+        N = self.boxfilter(Variable(lr_x.data.new().resize_((1, 1, h_lrx, w_lrx)).fill_(1.0)))
+
+        # l_a = torch.abs(l_a)
+        l_a = torch.abs(l_a) + self.epss
+
+        # --------------------------------
+        # The previous calculation of l_a is wrong
+        # changed by zhang shihao at 2019/3/21
+        #
+        # previous:
+        t_all = torch.sum(l_a)
+        l_t = l_a / t_all
+        # --------------------------------
+        # l_t = l_a / self.boxfilter(l_a)
+        # l_t = self.boxfilter(l_a)
+
+        ## mean_attention
+        mean_a = self.boxfilter(l_a) / N
+        ## mean_a^2xy
+        mean_a2xy = self.boxfilter(l_a * l_a * lr_x * lr_y) / N
+        ## mean_tax
+        mean_tax = self.boxfilter(l_t * l_a * lr_x) / N
+        ## mean_ay
+        mean_ay = self.boxfilter(l_a * lr_y) / N
+        ## mean_a^2x^2
+        mean_a2x2 = self.boxfilter(l_a * l_a * lr_x * lr_x) / N
+        ## mean_ax
+        mean_ax = self.boxfilter(l_a * lr_x) / N
+
+        temp = torch.abs(mean_a2x2 - N * mean_tax * mean_ax)
+
+        ## A
+        # A = (mean_a2xy - N * mean_tax * mean_ay) / (mean_a2x2 - N * mean_tax * mean_ax + self.eps)
+        A = (mean_a2xy - N * mean_tax * mean_ay) / (temp + self.eps)
+        ## b
+        b = (mean_ay - A * mean_ax) / (mean_a)
+
+        # --------------------------------
+        # Mean
+        # --------------------------------
+        A = self.boxfilter(A) / N
+        b = self.boxfilter(b) / N
+
+
+        ## mean_A; mean_b
+        mean_A = F.upsample(A, (h_hrx, w_hrx), mode='bilinear')
+        mean_b = F.upsample(b, (h_hrx, w_hrx), mode='bilinear')
+
+        return (mean_A*hr_x+mean_b).float()
+
+
+class GridAttentionBlock(nn.Module):###attention 模块
+    def __init__(self, in_channels):
+        super(GridAttentionBlock, self).__init__()
+
+        self.inter_channels = in_channels
+        self.in_channels = in_channels
+        self.gating_channels = in_channels
+
+        self.theta = nn.Conv2d(in_channels=self.in_channels, out_channels=self.inter_channels,
+                             kernel_size=1)
+
+        self.phi = nn.Conv2d(in_channels=self.gating_channels, out_channels=self.inter_channels,
+                           kernel_size=1, stride=1, padding=0, bias=True)
+        self.psi = nn.Conv2d(in_channels=self.inter_channels, out_channels=1, kernel_size=1, stride=1, padding=0, bias=True)
+
+        self.W = nn.Sequential(
+            nn.Conv2d(in_channels=self.in_channels, out_channels=self.in_channels, kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm3d(self.in_channels),
+        )
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, x, g):
+        input_size = x.size()
+        batch_size = input_size[0]
+        assert batch_size == g.size(0)
+
+        # theta => (b, c, t, h, w) -> (b, i_c, t, h, w) -> (b, i_c, thw)
+        # phi   => (b, g_d) -> (b, i_c)
+        theta_x = self.theta(x)
+        theta_x_size = theta_x.size()
+
+        # g (b, c, t', h', w') -> phi_g (b, i_c, t', h', w')
+        phi_g = F.upsample(self.phi(g), size=theta_x_size[2:], mode='bilinear')
+        f = F.relu(theta_x + phi_g, inplace=True)
+
+        #  psi^T * f -> (b, psi_i_c, t/s1, h/s2, w/s3)
+        sigm_psi_f = F.sigmoid(self.psi(f))
+
+        return sigm_psi_f
 
 class dual_resnet3d(nn.Module):
     def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=400, use_nl=False):
@@ -802,8 +1043,12 @@ class ConvBlock(nn.Module):  ###结构提取代码
         return torch.stack(output)
 
 if __name__ == '__main__':
-    extract = ConvBlock(3,3)
-
+    opt = NetOption()
+    xl = torch.randn(4, 21, 3, 244, 244)
+    xd = torch.randn(4, 21, 3, 244, 244)
+    x = (xl, xd)
+    model = resnet3d()
+    a = model(x)
     # net = i3_res50_nl(400)
     # inp = {'frames': torch.rand(4, 3, 32, 224, 224)}
     # pred, losses = net(inp)

@@ -28,25 +28,25 @@ def creatCsv(eyeId_list): ##genetate a csv with all label equal to 0
         #     CorpedRegion.append ("right")
         #     synechia.append (0)
         #     state.append (0)
-        for index in range(12):
+        for index in range(6):
             eyeid.append (ids)
             details.append(id+"_left_"+str(index))
-            odOros.append("os")
+            odOros.append(str(od_os))
             indexs.append(index)
             CorpedRegion.append("left")
             synechia.append(0)
             state.append (0)
-        for index in range(12):
+        for index in range(6):
             eyeid.append (ids)
             details.append(id+"_right_"+str(index))
-            odOros.append("os")
+            odOros.append(str(od_os))
             indexs.append(index)
             CorpedRegion.append("right")
             synechia.append(0)
             state.append (0)
     dicts = {"eyeId":eyeid, "odOros":odOros, "indexs":indexs, "CorpedRegion":CorpedRegion, "synechia":synechia, "details":details,"state":state}
     dict_df = pd.DataFrame(dicts)
-    dict_df.to_csv("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/wide.csv")
+    dict_df.to_csv("/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/one_wide1.csv")
 
     return 0
 
