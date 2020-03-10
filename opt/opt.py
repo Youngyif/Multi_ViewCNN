@@ -16,7 +16,7 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 1  # number of GPUs to use by default
+        self.nGPU = 2  # number of GPUs to use by default
         self.GPU = 0# default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedyincreasing training data for cifar10
         self.numclass = 1
@@ -24,11 +24,11 @@ class NetOption (object):
         self.nThreads = 10  # number of data loader threads
 
         # ------------- Training options --------------------------------------
-        self.testOnly = False  # run on validation set only
+        self.testOnly = True  # run on validation set only
         self.tenCrop = False  # Ten-crop testing
 
         # ---------- Optimization options -------------------------------------
-        self.nEpochs = 80  # number of total epochs to train
+        self.nEpochs = 200  # number of total epochs to train
         self.batchSize = 4  # mini-batch size
         self.LR = 0.001  # initial learning rate
         self.lrPolicy = "multistep"  # options: multistep | linear | exp
@@ -40,26 +40,27 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d
-        self.experimentID = "one_realcrop_attention_resnet3d_0304"
+        self.experimentID = "multiscale_test_resnet3d_0310"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
         # self.cat = True
         self.cat = False
+        self.mscale = True
         self.structure = False
-        self.attention = True
+        self.attention = False
         # ---------- Resume or Retrain options --------------------------------
         ##v3
 
         # self.retrain = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/pretrain/checkpoint18.pkl"## load model for output
         # self.retrain = [self.model1]  # path to model to retsrain with
         self.retrain = None  # path to model to retrain with
-        self.resume = None  # path to directory containing checkpoint
-        # self.resume = "/usr/home2/code/jingwen_code_oct_cropped/as-oct/log_asoct_ResNet_18_onevsall_bs8_addpad_9.6_3foldType=1-lr=0.01/model/checkpoint7.pkl"
+        self.resume = "/mnt/dataset/model/darklight/log_asoct_resnet3d_18_onevsall_bs4_multiscale_test_resnet3d_0310/model/best_model.pkl"  # path to directory containing checkpoint
+        # self.resume = None
         self.resumeEpoch = 0  # manual epoch number for resume
         # self.retrain = "/mnt/dataset/model/darklight/log_asoct_Single_viewCNN_18_onevsall_bs16_half_mvcmm_twostage_pretrain_0213/model/best_model.pkl"
-        # self.pretrain = None
-        self.pretrain = "/home/yangyifan/code/pytorch-resnet3d/pretrained/i3d_r50_nl_kinetics.pth"
+        self.pretrain = None
+        # self.pretrain = "/home/yangyifan/code/pytorch-resnet3d/pretrained/i3d_r50_nl_kinetics.pth"
         # self.pretrain = "/mnt/dataset/model/darklight/log_asoct_dual_resnet3d_18_onevsall_bs4_half_opennarrow_fixBeforeFc_0219/model/best_model.pkl"
         # check parameters
         self.paramscheck ()

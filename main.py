@@ -74,18 +74,25 @@ def main(net_opt=None):
         check_point_params = check_point.check_point_params
 
     greedynet = None
-    optimizer = check_point_params['opts']
-    start_stage = check_point_params['stage'] or 0
-    start_epoch = check_point_params['resume_epoch'] or 0
-    if check_point_params['resume_epoch'] is not None:
-        start_epoch += 1
-    if start_epoch >= opt.nEpochs:
-        start_epoch = 0
-        start_stage += 1
+    try:
+        optimizer = check_point_params['opts']
+        start_stage = check_point_params['stage']
+        start_epoch = check_point_params['resume_epoch']
+        if check_point_params['resume_epoch'] is not None:
+            start_epoch += 1
+        if start_epoch >= opt.nEpochs:
+            start_epoch = 0
+            start_stage += 1
+    except:
+        print("loading bestmodel")
+        optimizer = None
+        start_stage = None
+        start_epoch = None
+
 
     # model
-    if opt.netType =="dual_resnet3d":
-        model = dual_resnet3d(num_classes=opt.numclass, use_nl=True)
+    # if opt.netType =="dual_resnet3d":
+    #     model = dual_resnet3d(num_classes=opt.numclass, use_nl=True)
         # mydict = model.state_dict()
         # state_dict = torch.load(opt.pretrain)["model"]
         # # print(state_dict)
@@ -100,29 +107,33 @@ def main(net_opt=None):
         model = my_mvcnn(opt.numOfView)
     if opt.netType =="resnet3d":
         model = resnet3d(num_classes=opt.numclass, use_nl=True)
-        mydict = model.state_dict()
-        state_dict = torch.load(opt.pretrain)
-        # print(state_dict)
-        pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight'] }
-        mydict.update(pretrained_dict)
-        model.load_state_dict(mydict)
+        if opt.resume:
+            state_dict = check_point_params["model"]
+            model.load_state_dict(state_dict)
+        if opt.pretrain:
+            mydict = model.state_dict()
+            state_dict = torch.load(opt.resume)
+            # print(state_dict)
+            pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
+            mydict.update(pretrained_dict)
+            model.load_state_dict(mydict)
         # for param in model.parameters():  # nn.Module有成员函数parameters()
         #     param.requires_grad = False  ##固定所有层
         # model.fc = nn.Linear(512*4, 1)
     if opt.netType =="lstm_mvcnn":
         model = my_mvcnn_lstm(opt.numOfView)
-    if opt.netType =="dual_extract_resnet3d":
-        model = dual_extract_resnet3d(num_classes=opt.numclass, use_nl=True)
-        mydict = model.state_dict()
-        state_dict = torch.load(opt.pretrain)
-        # print(state_dict)
-        pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
-        mydict.update(pretrained_dict)
-        model.load_state_dict(mydict)
+    # if opt.netType =="dual_extract_resnet3d":
+    #     model = dual_extract_resnet3d(num_classes=opt.numclass, use_nl=True)
+    #     mydict = model.state_dict()
+    #     state_dict = torch.load(opt.pretrain)
+    #     # print(state_dict)
+    #     pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
+    #     mydict.update(pretrained_dict)
+    #     model.load_state_dict(mydict)
 
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
-    trainer = Trainer (model=model, opt=opt, optimizer=optimizer)
+    trainer = Trainer_multiscale (model=model, opt=opt, optimizer=optimizer)
     print ("|===>Create trainer")
 
     if opt.testOnly:

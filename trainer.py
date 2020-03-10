@@ -364,7 +364,7 @@ class Trainer (object):
             label for two branch
             
             """
-            labels_synechia = generateTarget(dark_input, labels)
+            labels_synechia = generateTarget(dark_input[0], labels)
             reduce_labels_synechia = labels_synechia
             labels_synechia = labels_synechia.cuda()
             labels_var = Variable(labels_synechia)
@@ -429,7 +429,7 @@ class Trainer (object):
             # reduce_labels = labels
             # labels = labels.cuda ()
 
-            labels_synechia = generateTarget(dark_input, labels)
+            labels_synechia = generateTarget(dark_input[0], labels)
             reduce_labels_synechia = labels_synechia
 
             labels_synechia = labels_synechia.cuda()
@@ -479,7 +479,7 @@ class Trainer (object):
 
 
 
-class Trainer_stage1 (object):
+class Trainer_multiscale (object):
     realLabelsarr = []
     predictLabelsarr = []
 
@@ -516,10 +516,10 @@ class Trainer_stage1 (object):
         for param_group in self.optimzer.param_groups:
             param_group['lr'] = self.lr
 
-    def forward(self, dark_input_var, light_input_var, labels_var=None):
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
         # forward and backward and optimize
         # print("darkinputsize", dark_input_var.size())
-        Pair = (dark_input_var, light_input_var)
+        Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         # print("pair0size", Pair[0].size())
         pairsize = Pair[0].size()
         output = self.model (Pair)
@@ -554,17 +554,25 @@ class Trainer_stage1 (object):
             start_time = time.time ()
             data_time = start_time - end_time
             ####  process image
-            labels = generateTarget (dark_input, labels)
+            labels = generateTarget (dark_input[0], labels)
             reduce_labels = labels
             labels = labels.cuda ()
             labels_var = Variable(labels)
 
 
 
-            dark_var = Variable(dark_input.cuda ())
-            light_var = Variable (light_input.cuda ())
+            dark_var = Variable(dark_input[0].cuda ())
+            fulldark_var = Variable(dark_input[1].cuda())
 
-            output, loss = self.forward (dark_var, light_var, labels_var)
+            light_var = Variable (light_input[0].cuda ())
+            fulllight_var = Variable(light_input[1].cuda())
+
+            # print("fulllightvar TRAIN", fulllight_var.size())
+            # print("fulldarkvar", fulldark_var.size())
+            # print("lightvar", light_var.size())
+            # print("darkvar", dark_var.size())
+
+            output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
 
             prediction = output.data.cpu ()
 
@@ -601,7 +609,7 @@ class Trainer_stage1 (object):
             start_time = time.time ()
             data_time = start_time - end_time
 
-            labels = generateTarget (dark_input, labels)
+            labels = generateTarget (dark_input[0], labels)
             reduce_labels = labels
             labels = labels.cuda ()
 
@@ -609,14 +617,22 @@ class Trainer_stage1 (object):
             with torch.no_grad ():
                 labels_var = Variable (labels)
 
-            dark_input= dark_input.cuda ()
-            light_input=light_input.cuda()
+            # dark_input= dark_input[0].cuda ()
+            # fulldark_var =  dark_input[1].cuda ()
+            # light_input=light_input[0].cuda()
+            # fulllight_var = light_input[1].cuda()
+
             with torch.no_grad ():
-                dark_var = Variable (dark_input)
-                light_var = Variable (light_input)
+                fulldark_var = Variable (dark_input[1].cuda ())
+                dark_var = Variable (dark_input[0].cuda ())
+                fulllight_var = Variable (light_input[1].cuda())
+                light_var = Variable (light_input[0].cuda())
 
-
-            output, loss = self.forward (dark_var, light_var, labels_var)
+            # print("fulllightvar", fulllight_var.size())
+            # print("fulldarkvar", fulldark_var.size())
+            # print("lightvar", light_var.size())
+            # print("darkvar", dark_var.size())
+            output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
             loss_sum += float(loss.data)/iters
             prediction = output.data.cpu ()
             output_list.append (prediction.numpy ())

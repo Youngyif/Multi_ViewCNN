@@ -1,6 +1,6 @@
 import torch
 import torchvision.transforms as transforms
-from dataloader.myloader_one_clock import  Myloader
+from dataloader.myloader_multiscale import  Myloader
 from PIL import Image
 import numpy as np
 import random
@@ -146,14 +146,16 @@ class DataLoader (object):
 
     def asoct_data(self, data_path, label_path, rootpath):
         imgSize = 244
-        train_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/train_all.txt"
-        test_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/val_all.txt"
+        train_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/train_test.txt"
+        test_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/val_test.txt"
         # train_dir = data_path + "/wide_split/train_all.txt"  #
         # test_dir = data_path + "/wide_split/val_all.txt"  #
         # train_dir = data_path + "/wide_split/quartersplit/train_quater.txt"  #
         # test_dir = data_path + "/wide_split/quartersplit/val_quater.txt"  #
-        normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
-                                          std=[0.189, 0.189, 0.189])
+        # normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
+        #                                   std=[0.189, 0.189, 0.189])
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225])
         imagenet_pca = {
             'eigval': torch.Tensor ([0.2175, 0.0188, 0.0045]),
             'eigvec': torch.Tensor ([
@@ -191,7 +193,7 @@ class DataLoader (object):
         ])
         test_loader = torch.utils.data.DataLoader (
             Myloader (rootpath, test_dir, label_path, test_transform),
-            batch_size=int (self.batch_size/2 ),
+            batch_size=int (self.batch_size/2),
             shuffle=False,
             num_workers=self.n_threads,
             pin_memory=False)

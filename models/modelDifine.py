@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from opt.opt import *
 from torch.autograd import Variable
 from models.box_filter import BoxFilter
+import numpy as np
 
 opt = NetOption()
 
@@ -354,7 +355,9 @@ class resnet3d(nn.Module):
 
         # attention blocks
         self.attentionblock5 = GridAttentionBlock(in_channels=1024)
-
+        ###conv fusion
+        self.conv11 = nn.Conv3d(2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        ###conv fusion
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
         self.bn1 = nn.BatchNorm3d(64)
         self.relu = nn.ReLU(inplace=True)
@@ -371,8 +374,35 @@ class resnet3d(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
         n=1
         if opt.cat ==True:
-            n=2
+            n=1
         self.fc = nn.Linear(n*512 * block.expansion, num_classes)
+
+        ##### multi scale
+        self.conv11_m = nn.Conv3d(2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        self.conv11_final = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        ###conv fusion
+        self.inplanes = 64
+        self.conv1_m = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
+        self.bn1_m = nn.BatchNorm3d(64)
+        self.relu_m = nn.ReLU(inplace=True)
+        self.maxpool1_m = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
+        self.maxpool2_m = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+
+        nonlocal_mod = 2 if use_nl else 1000
+        self.layer1_m = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
+        self.layer2_m = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer3_m = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer4_m = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
+        self.avgpool_m = nn.AdaptiveAvgPool3d((1, 1, 1))
+        n = 1
+        if opt.cat == True:
+            n = 1
+        self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
+
+
+        #####
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
         self.extract = ConvBlock(3,3)
@@ -427,6 +457,120 @@ class resnet3d(nn.Module):
         if opt.structure ==True:
             return (x, x_structure)
         return x
+
+    def forward_single_mscale_single(self, x):
+        x_d, x_l, fullx_d, fullx_l = x
+        x_d = self.conv1(x_d)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+        x_d = self.layer1(x_d)
+        x_d = self.maxpool2(x_d)
+        x_d = self.layer2(x_d)
+        x_d = self.layer3(x_d)
+
+        # x_l = self.conv1(x_l)
+        # x_l = self.bn1(x_l)
+        # x_l = self.relu(x_l)
+        # x_l = self.maxpool1(x_l)
+        # x_l = self.layer1(x_l)
+        # x_l = self.maxpool2(x_l)
+        # x_l = self.layer2(x_l)
+        # x_l = self.layer3(x_l)
+        # x = torch.cat((x_l, x_d), dim=1)
+        # x = self.conv11(x)
+        # print("xsize layer3", x_l.size())
+        x_d = self.layer4(x_d)
+        fullx_d = self.conv1_m(fullx_d)
+        fullx_d = self.bn1_m(fullx_d)
+        fullx_d = self.relu_m(fullx_d)
+        fullx_d = self.maxpool1_m(fullx_d)
+        fullx_d = self.layer1_m(fullx_d)
+        fullx_d = self.maxpool2_m(fullx_d)
+        fullx_d = self.layer2_m(fullx_d)
+        fullx_d = self.layer3_m(fullx_d)
+
+        # fullx_l = self.conv1_m(fullx_l)
+        # fullx_l = self.bn1_m(fullx_l)
+        # fullx_l = self.relu_m(fullx_l)
+        # fullx_l = self.maxpool1_m(fullx_l)
+        # fullx_l = self.layer1_m(fullx_l)
+        # fullx_l = self.maxpool2_m(fullx_l)
+        # fullx_l = self.layer2_m(fullx_l)
+        # fullx_l = self.layer3_m(fullx_l)
+        #
+        # fullx = torch.cat((fullx_l, fullx_d), dim=1)
+        # fullx = self.conv11_m(fullx)
+        fullx_d = self.layer4_m(fullx_d)
+
+        x = torch.cat((fullx_d, x_d), dim=1)
+        x = self.conv11_final(x)
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+
+        return x
+
+
+    def forward_single_mscale(self, x):
+        x_d, x_l, fullx_d, fullx_l = x
+        x_d = self.conv1(x_d)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+        x_d = self.layer1(x_d)
+        x_d = self.maxpool2(x_d)
+        x_d = self.layer2(x_d)
+        x_d = self.layer3(x_d)
+
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
+        x = torch.cat((x_l, x_d), dim=1)
+        x = self.conv11(x)
+        # print("xsize layer3", x_l.size())
+        x = self.layer4(x)
+        fullx_d = self.conv1_m(fullx_d)
+        fullx_d = self.bn1_m(fullx_d)
+        fullx_d = self.relu_m(fullx_d)
+        fullx_d = self.maxpool1_m(fullx_d)
+        fullx_d = self.layer1_m(fullx_d)
+        fullx_d = self.maxpool2_m(fullx_d)
+        fullx_d = self.layer2_m(fullx_d)
+        fullx_d = self.layer3_m(fullx_d)
+
+        fullx_l = self.conv1_m(fullx_l)
+        fullx_l = self.bn1_m(fullx_l)
+        fullx_l = self.relu_m(fullx_l)
+        fullx_l = self.maxpool1_m(fullx_l)
+        fullx_l = self.layer1_m(fullx_l)
+        fullx_l = self.maxpool2_m(fullx_l)
+        fullx_l = self.layer2_m(fullx_l)
+        fullx_l = self.layer3_m(fullx_l)
+
+        fullx = torch.cat((fullx_l, fullx_d), dim=1)
+        fullx = self.conv11_m(fullx)
+        fullx = self.layer4_m(fullx)
+
+        x = torch.cat((fullx, x), dim=1)
+        x = self.conv11_final(x)
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+
+        return x
+
     def forward_single_cat(self, x):
         if opt.structure == True:
             x = self.extract(x)
@@ -443,7 +587,7 @@ class resnet3d(nn.Module):
         x_d = self.maxpool2(x_d)
         x_d = self.layer2(x_d)
         x_d = self.layer3(x_d)
-        x_d = self.layer4(x_d)
+        # x_d = self.layer4(x_d)
 
         x_l = self.conv1(x_l)
         x_l = self.bn1(x_l)
@@ -453,8 +597,14 @@ class resnet3d(nn.Module):
         x_l = self.maxpool2(x_l)
         x_l = self.layer2(x_l)
         x_l = self.layer3(x_l)
-        x_l = self.layer4(x_l)
-        x = torch.cat((x_l,x_d),dim=1)
+        x = torch.cat((x_l, x_d), dim=1)
+        x = self.conv11(x)
+        # print("xsize layer3", x_l.size())
+        x = self.layer4(x)
+        # x = torch.cat((x_l, x_d), dim=1)
+        # print("xsize layer4",x_l.size())
+        # x = self.conv11(x)
+        # print("xsize 11", x.size())
         x = self.avgpool(x)
         x = self.drop(x)
 
@@ -511,7 +661,7 @@ class resnet3d(nn.Module):
         for i in range(N):
             x_dn = x_d[:, :, i, ...]
             x_ln = x_l[:, :, i, ...]
-            x = self.gf(x_dn, x_ln, x_ln, self.attentionblock5(x_dn, x_ln))
+            x = self.gf(x_dn, x_ln, x_dn, self.attentionblock5(x_dn, x_ln))
             output.append(x.view(B, C, 1, H, W))
         # print("dimension of output",len(output),output[0].size())
         x = torch.cat(output, dim=2)
@@ -544,22 +694,30 @@ class resnet3d(nn.Module):
         # x=batch[1]
         # B,N,C,H,W = x.size()
         # x = x.view(B,C,N,H,W)
-        x_l = batch[1]
         x_d = batch[0]
+        x_l = batch[1]
+        fullx_l = batch[2]
+        fullx_d = batch[3]
         B, N, C, H, W = x_l.size()
+        B1,N1,C1,H1,W1=fullx_d.size()
         x = (x_d.view(B, C, N, H, W), x_l.view(B, C, N, H, W))
-        batch = {'frames': x} ##0 dark 1 light
+        ms_x = (x_d.view(B, C, N, H, W), x_l.view(B, C, N, H, W), fullx_d.view(B1, C1, N1, H1, W1), fullx_l.view(B1, C1, N1, H1, W1))
+        batch = {'frames': x, 'frames1': ms_x} ##0 dark 1 light
         # 5D tensor == single clip
+        if opt.mscale == True:
+            # print("multiscale single")
+            pred = self.forward_single_mscale_single(batch['frames1'])
         if opt.cat == True:
             # if batch['frames'].dim() == 5:
             # print("catmodel")
             pred = self.forward_single_cat(batch['frames'])
         if opt.cat == False:
             if opt.attention ==True:
-                # print("attention")
+                print("attention")
                 pred = self.attention_forward_single(batch['frames'])
             else:
-                pred = self.forward_single(batch['frames'][0])###0 denotes dark 1denotes light
+                # print("dark")
+                pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
 
         # 7D tensor == 3 crops/10 clips
         # elif batch['frames'].dim() == 7:
@@ -849,160 +1007,160 @@ class dual_resnet3d(nn.Module):
 
         return pred  # , loss_dict
 
-class dual_extract_resnet3d(nn.Module):
-    def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=400, use_nl=False):
-        self.inplanes = 64
-        super(dual_extract_resnet3d, self).__init__()
-        self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
-        self.bn1 = nn.BatchNorm3d(64)
-        self.relu = nn.ReLU(inplace=True)
-        self.maxpool1 = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
-        self.maxpool2 = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
-
-        nonlocal_mod = 2 if use_nl else 1000
-        self.layer1 = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
-                                       temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
-                                       temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
-        self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc1 = nn.Linear(512 * block.expansion, num_classes)
-        # self.layer3_o = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
-        #                                temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
-        # self.layer4_o = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
-        # self.avgpool_o = nn.AdaptiveAvgPool3d((1, 1, 1))
-        self.fc1_o = nn.Linear(512 * block.expansion, num_classes)
-        self.drop = nn.Dropout(0.5)
-        self.sigmoid = nn.Sigmoid()
-        for m in self.modules():
-            if isinstance(m, nn.Conv3d):
-                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
-            elif isinstance(m, nn.BatchNorm3d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-        # if opt.pretrain:
-        #     print("pretrain model >>>>>>")
-        #     retrain = torch.load(opt.pretrain)["model"]
-        #     if isinstance(retrain, nn.DataParallel):
-        #         # a = retrain
-        #         self.conv1 = retrain.module.conv1p
-        #         self.bn1 = retrain.module.bn1
-        #         self.relu = retrain.module.relu
-        #         self.maxpool1 = retrain.module.maxpool1
-        #         self.maxpool2 = retrain.module.maxpool2
-        #         self.layer1 = retrain.module.layer1
-        #         self.layer2 = retrain.module.layer2
-        #         self.layer3_o = retrain.module.layer3
-        #         self.layer4_o = retrain.module.layer4
-        #         self.avgpool_o = retrain.module.avgpool
-        #         self.fc_o = retrain.module.fc
-        #
-        #         self.layer3_s = retrain.module.layer3
-        #         self.layer4_s = retrain.module.layer4
-        #         self.avgpool_s = retrain.module.avgpool
-        #         self.fc_s = retrain.module.fc
-        #         # self.model = retrain.module.model
-        #     else:
-        #         a = retrain
-        #         self.conv1 = retrain.conv1
-        #         self.bn1 = retrain.bn1
-        #         self.relu = retrain.relu
-        #         self.maxpool1 = retrain.maxpool1
-        #         self.maxpool2 = retrain.maxpool2
-        #         self.layer1 = retrain.layer1
-        #         self.layer2 = retrain.layer2
-        #         self.layer3 = retrain.layer3
-        #         self.layer4 = retrain.layer4
-        #         self.avgpool = retrain.avgpool
-        #         self.fc = retrain.fc
-        #         # self.model = retrain.model
-        self.extract = ConvBlock(3,3)
-
-    def _make_layer(self, block, planes, blocks, stride, temp_conv, temp_stride, nonlocal_mod=1000):
-        downsample = None
-        if stride != 1 or self.inplanes != planes * block.expansion or temp_stride[0] != 1:
-            downsample = nn.Sequential(
-                nn.Conv3d(self.inplanes, planes * block.expansion, kernel_size=(1, 1, 1),
-                          stride=(temp_stride[0], stride, stride), padding=(0, 0, 0), bias=False),
-                nn.BatchNorm3d(planes * block.expansion)
-            )
-
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, temp_conv[0], temp_stride[0], False))
-        self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, 1, None, temp_conv[i], temp_stride[i],
-                                i % nonlocal_mod == nonlocal_mod - 1))
-
-        return nn.Sequential(*layers)
-
-    def forward_single(self, x):
-        x = self.extract(x)
-        x_structure = x
-        B, N, C, H, W = x.size()
-        x = x.view(B, C, N, H, W)
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.maxpool1(x)
-        x = self.layer1(x)
-        x = self.maxpool2(x)
-        x = self.layer2(x)
-        # x_o = self.layer3(x)
-        # x_o = self.layer4(x_o)
-        #
-        # x_o = self.avgpool_o(x_o)  ##x_o for opennarrow   x_s for synechia
-        # x_o = self.drop(x_o)
-        # x_o = x_o.view(x_o.shape[0], -1)
-
-        #####
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        x = self.avgpool(x)
-        x = self.drop(x)
-        x = x.view(x.shape[0], -1)
-        x_o = self.fc1_o(x)
-        x_o = self.sigmoid(x_o)
-        x = self.fc1(x)
-        x = self.sigmoid(x)
-        #####
-
-        return (x_o, x_structure, x)
-
-    def forward_multi(self, x):
-        clip_preds = []
-        for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224
-            spatial_crops = []
-            for crop_idx in range(x.shape[2]):
-                clip = x[:, clip_idx, crop_idx]
-                clip = self.forward_single(clip)
-                spatial_crops.append(clip)
-            spatial_crops = torch.stack(spatial_crops, 1).mean(1)  # (B, 400)
-            clip_preds.append(spatial_crops)
-        clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
-        return clip_preds
-
-    def forward(self, batch):  ##x[0] is dark x[1] is light
-        x = batch[0]
-        B, N, C, H, W = x.size()
-        x = x.view(B, C, N, H, W)
-        batch = {'frames': x}  ##0 dark 1 light
-        # 5D tensor == single clip
-        if batch['frames'].dim() == 5:
-            pred = self.forward_single(batch['frames'])
-
-        # 7D tensor == 3 crops/10 clips
-        elif batch['frames'].dim() == 7:
-            pred = self.forward_multi(batch['frames'])
-
-        loss_dict = {}
-        if 'label' in batch:
-            loss = F.cross_entropy(pred, batch['label'], reduction='none')
-            loss_dict = {'loss': loss}
-
-        return pred  # , loss_dict
+# class dual_extract_resnet3d(nn.Module):
+#     def __init__(self, block=Bottleneck, layers=[3, 4, 6, 3], num_classes=400, use_nl=False):
+#         self.inplanes = 64
+#         super(dual_extract_resnet3d, self).__init__()
+#         self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
+#         self.bn1 = nn.BatchNorm3d(64)
+#         self.relu = nn.ReLU(inplace=True)
+#         self.maxpool1 = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
+#         self.maxpool2 = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+#
+#         nonlocal_mod = 2 if use_nl else 1000
+#         self.layer1 = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
+#         self.layer2 = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
+#                                        temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+#         self.layer3 = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
+#                                        temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+#         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
+#         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
+#         self.fc1 = nn.Linear(512 * block.expansion, num_classes)
+#         # self.layer3_o = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
+#         #                                temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+#         # self.layer4_o = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
+#         # self.avgpool_o = nn.AdaptiveAvgPool3d((1, 1, 1))
+#         self.fc1_o = nn.Linear(512 * block.expansion, num_classes)
+#         self.drop = nn.Dropout(0.5)
+#         self.sigmoid = nn.Sigmoid()
+#         for m in self.modules():
+#             if isinstance(m, nn.Conv3d):
+#                 m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
+#             elif isinstance(m, nn.BatchNorm3d):
+#                 m.weight.data.fill_(1)
+#                 m.bias.data.zero_()
+#         # if opt.pretrain:
+#         #     print("pretrain model >>>>>>")
+#         #     retrain = torch.load(opt.pretrain)["model"]
+#         #     if isinstance(retrain, nn.DataParallel):
+#         #         # a = retrain
+#         #         self.conv1 = retrain.module.conv1p
+#         #         self.bn1 = retrain.module.bn1
+#         #         self.relu = retrain.module.relu
+#         #         self.maxpool1 = retrain.module.maxpool1
+#         #         self.maxpool2 = retrain.module.maxpool2
+#         #         self.layer1 = retrain.module.layer1
+#         #         self.layer2 = retrain.module.layer2
+#         #         self.layer3_o = retrain.module.layer3
+#         #         self.layer4_o = retrain.module.layer4
+#         #         self.avgpool_o = retrain.module.avgpool
+#         #         self.fc_o = retrain.module.fc
+#         #
+#         #         self.layer3_s = retrain.module.layer3
+#         #         self.layer4_s = retrain.module.layer4
+#         #         self.avgpool_s = retrain.module.avgpool
+#         #         self.fc_s = retrain.module.fc
+#         #         # self.model = retrain.module.model
+#         #     else:
+#         #         a = retrain
+#         #         self.conv1 = retrain.conv1
+#         #         self.bn1 = retrain.bn1
+#         #         self.relu = retrain.relu
+#         #         self.maxpool1 = retrain.maxpool1
+#         #         self.maxpool2 = retrain.maxpool2
+#         #         self.layer1 = retrain.layer1
+#         #         self.layer2 = retrain.layer2
+#         #         self.layer3 = retrain.layer3
+#         #         self.layer4 = retrain.layer4
+#         #         self.avgpool = retrain.avgpool
+#         #         self.fc = retrain.fc
+#         #         # self.model = retrain.model
+#         self.extract = ConvBlock(3,3)
+#
+#     def _make_layer(self, block, planes, blocks, stride, temp_conv, temp_stride, nonlocal_mod=1000):
+#         downsample = None
+#         if stride != 1 or self.inplanes != planes * block.expansion or temp_stride[0] != 1:
+#             downsample = nn.Sequential(
+#                 nn.Conv3d(self.inplanes, planes * block.expansion, kernel_size=(1, 1, 1),
+#                           stride=(temp_stride[0], stride, stride), padding=(0, 0, 0), bias=False),
+#                 nn.BatchNorm3d(planes * block.expansion)
+#             )
+#
+#         layers = []
+#         layers.append(block(self.inplanes, planes, stride, downsample, temp_conv[0], temp_stride[0], False))
+#         self.inplanes = planes * block.expansion
+#         for i in range(1, blocks):
+#             layers.append(block(self.inplanes, planes, 1, None, temp_conv[i], temp_stride[i],
+#                                 i % nonlocal_mod == nonlocal_mod - 1))
+#
+#         return nn.Sequential(*layers)
+#
+#     def forward_single(self, x):
+#         x = self.extract(x)
+#         x_structure = x
+#         B, N, C, H, W = x.size()
+#         x = x.view(B, C, N, H, W)
+#         x = self.conv1(x)
+#         x = self.bn1(x)
+#         x = self.relu(x)
+#         x = self.maxpool1(x)
+#         x = self.layer1(x)
+#         x = self.maxpool2(x)
+#         x = self.layer2(x)
+#         # x_o = self.layer3(x)
+#         # x_o = self.layer4(x_o)
+#         #
+#         # x_o = self.avgpool_o(x_o)  ##x_o for opennarrow   x_s for synechia
+#         # x_o = self.drop(x_o)
+#         # x_o = x_o.view(x_o.shape[0], -1)
+#
+#         #####
+#         x = self.layer3(x)
+#         x = self.layer4(x)
+#
+#         x = self.avgpool(x)
+#         x = self.drop(x)
+#         x = x.view(x.shape[0], -1)
+#         x_o = self.fc1_o(x)
+#         x_o = self.sigmoid(x_o)
+#         x = self.fc1(x)
+#         x = self.sigmoid(x)
+#         #####
+#
+#         return (x_o, x_structure, x)
+#
+#     def forward_multi(self, x):
+#         clip_preds = []
+#         for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224
+#             spatial_crops = []
+#             for crop_idx in range(x.shape[2]):
+#                 clip = x[:, clip_idx, crop_idx]
+#                 clip = self.forward_single(clip)
+#                 spatial_crops.append(clip)
+#             spatial_crops = torch.stack(spatial_crops, 1).mean(1)  # (B, 400)
+#             clip_preds.append(spatial_crops)
+#         clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
+#         return clip_preds
+#
+#     def forward(self, batch):  ##x[0] is dark x[1] is light
+#         x = batch[0]
+#         B, N, C, H, W = x.size()
+#         x = x.view(B, C, N, H, W)
+#         batch = {'frames': x}  ##0 dark 1 light
+#         # 5D tensor == single clip
+#         if batch['frames'].dim() == 5:
+#             pred = self.forward_single(batch['frames'])
+#
+#         # 7D tensor == 3 crops/10 clips
+#         elif batch['frames'].dim() == 7:
+#             pred = self.forward_multi(batch['frames'])
+#
+#         loss_dict = {}
+#         if 'label' in batch:
+#             loss = F.cross_entropy(pred, batch['label'], reduction='none')
+#             loss_dict = {'loss': loss}
+#
+#         return pred  # , loss_dict
 
 
 class ConvBlock(nn.Module):  ###结构提取代码
@@ -1036,19 +1194,50 @@ class ConvBlock(nn.Module):  ###结构提取代码
         )
 
     def forward(self, x):
-        output = []
-        for i in range(x.size(0)):
-            C,N,H,W = x[i,...].size()
-            output.append(self.cov_block(x[i,...].view(N,C,H,W)))
-        return torch.stack(output)
+        # output = []
+        # for i in range(x.size(0)):
+        #     C,N,H,W = x[i,...].size()
+        #     res = self.cov_block(x[i, ...].view(N, C, H, W))
+        #     output.append(res)
+        # return torch.stack(output)
+        res = self.cov_block(x)
+
+        return res
 
 if __name__ == '__main__':
     opt = NetOption()
     xl = torch.randn(4, 21, 3, 244, 244)
     xd = torch.randn(4, 21, 3, 244, 244)
-    x = (xl, xd)
+    fullxl = torch.randn(4, 21, 3, 244, 244)
+    fullxd = torch.randn(4, 21, 3, 244, 244)
+    x = (xl, xd, fullxd, fullxl)
     model = resnet3d()
     a = model(x)
+
+
+    # extract = ConvBlock(3,3)
+    # img = Image.open("/mnt/dataset/CASIA2/3dv_casia2_128slices_newsize/MP-N051_R_CASIA2_LRS_125.jpg").convert ("RGB")
+    # trans = transforms.Compose([
+    # transforms.Scale(244),
+    # transforms.CenterCrop(244),
+    # transforms.ToTensor(),
+    # transforms.Normalize(mean=[0.485, 0.456, 0.406],std=[0.229, 0.224, 0.225]),
+    # ]
+    # )
+    #
+    # trans1 = transforms.Compose([
+    #     transforms.ToPILImage()
+    # ]
+    # )
+    #
+    # img = trans(img)
+    # c,h,w = img.size()
+    # img = extract(img.view(1,c,h,w))
+    # img = img.view(c,h,w)
+    # img = trans1(img)
+    # img.save("/home/yangyifan/save/crop1.jpg")
+
+
     # net = i3_res50_nl(400)
     # inp = {'frames': torch.rand(4, 3, 32, 224, 224)}
     # pred, losses = net(inp)
