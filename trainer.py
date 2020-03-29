@@ -9,7 +9,8 @@ from saveModel.graphgen import *
 import numpy as np
 from sklearn import metrics
 import pandas as pd
-
+import collections
+import matplotlib.pyplot as plt
 single_train_time = 0
 single_test_time = 0
 single_train_iters = 0
@@ -121,7 +122,7 @@ def computeresult(outputs, labels, loss, top5_flag=False):
         return top1_error, top1_loss, top5_error
 
 
-def computeAUC(outputs, labels):
+def computeAUC(outputs, labels, epoch):
     if isinstance (outputs, list):
         pred = np.concatenate (outputs, axis=0)
         y = np.concatenate (labels, axis=0)
@@ -129,38 +130,94 @@ def computeAUC(outputs, labels):
         pred = outputs
         y = labels
     fpr, tpr, thresholds = metrics.roc_curve (y, pred, pos_label=1)
-    auc = metrics.auc (fpr, tpr)
-    if np.isnan (auc):
-        auc = 0
-    return auc, fpr, tpr
+    roc_auc = metrics.auc (fpr, tpr)
+    if np.isnan (roc_auc):
+        roc_auc = 0
+    # roc_auc = metrics.auc(fpr, tpr)
+
+    if opt.draw_ROC == True:
+        plt.title('Receiver Operating Characteristic')
+        plt.plot(fpr, tpr, 'b', label='AUC = %0.4f' % roc_auc)
+        plt.legend(loc='lower right')
+        plt.plot([0, 1], [0, 1], 'r--')
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.ylabel('True Positive Rate')
+        plt.xlabel('False Positive Rate')
+        plt.savefig(str(epoch)+"epoch_RocOf"+opt.experimentID+".png")
+    return roc_auc, fpr, tpr
 
 def readwrongpath(lists):
     res=[]
     for i in lists:
-        for j in i[0]:
+        for j in i:
             res.append(j)
     return res
 
+# def one_to_quarter(dicts):
+#     # idlist = []
+#     dicts1 = collections.defaultdict(list)
+#     # for key in dicts:
+#     #     quarter = key
+#     #     print(quarter)
+#     #     splits = key.split("_")
+#     #     id = splits[0]+"_"+splits[1]+"_"+splits[2]
+#     #     index = splits[3]
+#     #     if int(index)>2:
+#     #         tail = "1"
+#     #     elif int(index)<=2:
+#     #         tail = "0"
+#     #     if id not in idlist:
+#     #         idlist.append(id+"_"+tail)
+#     for key in dicts:
+#         pred = int(dicts[key])
+#         splits = key.split("_")
+#         id = splits[0] + "_" + splits[1] + "_" + splits[2]
+#         index = splits[3]
+#         if int(index)>2:
+#             tail = "1"
+#         elif int(index)<=2:
+#             tail = "0"
+#         quarter = id+"_"+tail
+#         dicts1[quarter].append(pred)
+#     print(dicts1)
+#     for key in dicts1:
+#
+
+
+
+
+
+
+
 def computeEval(outputs, labels, pathlist):
+    # dicts = {}
     wronglist=[]
-    # print("lenofpred", len(outputs), len(labels),len(pathlist))
+    # print("lenofpred", len(outputs), len(labels),len(path))
     # print(outputs)
     # print(labels)
+    # print(pathlist)
     # paths=np.concatenate (pathlist, axis=0)
-    pathlist = readwrongpath(pathlist)
+    path = readwrongpath(pathlist)
     if isinstance (outputs, list):
         pred = np.concatenate (outputs, axis=0)
         y = np.concatenate (labels, axis=0)
+        # path = np.concatenate (labels, axis=0)
     else:
         pred = outputs
         y = labels
-    # print("pred_after_theshold",pred)
+        # path = pathlist
     pred[pred >= 0.5] = 1
     pred[pred < 0.5] = 0
+    # print("pred_after_theshold",pred)
+    # print("y_after_theshold", y)
     ##wrong_image
+    # print("lenofpred", len(pred), len(y), len(path))
     for i in range(len(pred)):
+        # dicts[path[i]] = pred[i]
         if pred[i]!=y[i]:
-            wronglist.append(pathlist[i])
+            wronglist.append(path[i])
+    # one_to_quarter(dicts)
     # acc
     acc = metrics.accuracy_score (y, pred)
     # tn, fp, fn, tp
@@ -224,25 +281,7 @@ def generateTarget(images, labels):
     reduce_labels = reduce_labels.type_as (images)
     return reduce_labels
 
-class TVLoss(torch.nn.Module): ###for extract structure
-    def __init__(self):
-        super(TVLoss,self).__init__()
 
-    def forward(self,x):
-        h_tv = 0
-        w_tv = 0
-        for i in range(x.size(0)):
-            xt = x[i,...]
-            h_x = xt.size()[2]
-            w_x = xt.size()[3]
-            count_h = self._tensor_size(xt[:,:,1:,:])
-            count_w = self._tensor_size(xt[:,:,:,1:])
-            h_tv += torch.pow((xt[:,:,1:,:]-xt[:,:,:h_x-1,:]),2).sum()
-            w_tv += torch.pow((xt[:,:,:,1:]-xt[:,:,:,:w_x-1]),2).sum()
-        return h_tv/count_h + w_tv/count_w
-
-    def _tensor_size(self,t):
-        return t.size()[1]*t.size()[2]*t.size()[3]*t.size()[0]
 
 class L1norm(torch.nn.Module): ##loss_testure
     def __init__(self):
@@ -271,8 +310,6 @@ class Trainer (object):
         # print (model)
         if self.opt.trainingType == 'onevsall':
             self.criterion = nn.BCELoss ().cuda ()
-            self.criterion_structure = TVLoss().cuda()
-            self.criterion_testure = L1norm().cuda()
         else:
             self.criterion = nn.CrossEntropyLoss ().cuda ()
         self.lr = self.opt.LR
@@ -313,14 +350,12 @@ class Trainer (object):
             if opt.structure ==True:
 
                 loss = self.criterion (output[0], labels_var)
-                loss1 = self.criterion_structure(output[1])
-                loss2 = self.criterion_testure(Pair[0]-output[1])
             if opt.structure ==False:
                 loss = self.criterion (output, labels_var)
         else:
             loss = None
         if opt.structure == True:
-            return output[0], loss+0.001*(loss1)#+loss2)
+            return output[0], loss
         if opt.structure == False:
             return output, loss
 
@@ -406,7 +441,7 @@ class Trainer (object):
             printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
                          loss.data, mode="Train")
         loss_sum /= iters
-        auc, fpr, tpr = computeAUC (output_list, label_list)
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         print ("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
         return auc, loss_sum
 
@@ -470,7 +505,7 @@ class Trainer (object):
                          loss.data, mode="Test")
 
         # loss_sum /= iters
-        auc, fpr, tpr = computeAUC (output_list, label_list)
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval (output_list, label_list, pathlist)
         print ("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
         auc, loss_sum, acc, precision, recall, f1, gmean))
@@ -549,7 +584,7 @@ class Trainer_multiscale (object):
         start_time = time.time ()
         end_time = start_time
 
-        for i, (dark_input, light_input, labels, _ ) in enumerate (train_loader):
+        for i, (dark_input, light_input, labels, _) in enumerate (train_loader):
             self.model.train ()
             start_time = time.time ()
             data_time = start_time - end_time
@@ -590,7 +625,7 @@ class Trainer_multiscale (object):
             printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
                          loss.data, mode="Train")
         loss_sum /= iters
-        auc, fpr, tpr = computeAUC (output_list, label_list)
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         print ("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
         return auc, loss_sum
 
@@ -604,48 +639,49 @@ class Trainer_multiscale (object):
 
         start_time = time.time ()
         end_time = start_time
-        for i, (dark_input, light_input, labels, image_name) in enumerate (test_loader):
-            pathlist.append(image_name)
-            start_time = time.time ()
-            data_time = start_time - end_time
+        for i, (dark_input, light_input, labels, orgpath) in enumerate (test_loader):
+            with torch.no_grad():
+                pathlist.append(orgpath)
+                start_time = time.time ()
+                data_time = start_time - end_time
 
-            labels = generateTarget (dark_input[0], labels)
-            reduce_labels = labels
-            labels = labels.cuda ()
+                labels = generateTarget (dark_input[0], labels)
+                reduce_labels = labels
+                labels = labels.cuda ()
 
 
-            with torch.no_grad ():
+
                 labels_var = Variable (labels)
 
-            # dark_input= dark_input[0].cuda ()
-            # fulldark_var =  dark_input[1].cuda ()
-            # light_input=light_input[0].cuda()
-            # fulllight_var = light_input[1].cuda()
+                # dark_input= dark_input[0].cuda ()
+                # fulldark_var =  dark_input[1].cuda ()
+                # light_input=light_input[0].cuda()
+                # fulllight_var = light_input[1].cuda()
 
-            with torch.no_grad ():
+
                 fulldark_var = Variable (dark_input[1].cuda ())
                 dark_var = Variable (dark_input[0].cuda ())
                 fulllight_var = Variable (light_input[1].cuda())
                 light_var = Variable (light_input[0].cuda())
 
-            # print("fulllightvar", fulllight_var.size())
-            # print("fulldarkvar", fulldark_var.size())
-            # print("lightvar", light_var.size())
-            # print("darkvar", dark_var.size())
-            output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
-            loss_sum += float(loss.data)/iters
-            prediction = output.data.cpu ()
-            output_list.append (prediction.numpy ())
-            label_list.append (reduce_labels.cpu ().numpy ())
-            end_time = time.time ()
-            iter_time = end_time - start_time
+                # print("fulllightvar", fulllight_var.size())
+                # print("fulldarkvar", fulldark_var.size())
+                # print("lightvar", light_var.size())
+                # print("darkvar", dark_var.size())
+                output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
+                loss_sum += float(loss.data)/iters
+                prediction = output.data.cpu ()
+                output_list.append (prediction.numpy ())
+                label_list.append (reduce_labels.cpu ().numpy ())
+                end_time = time.time ()
+                iter_time = end_time - start_time
 
-            printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
-                         # loss.data[0], mode="Test")
-                         loss.data, mode="Test")
+                printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                             # loss.data[0], mode="Test")
+                             loss.data, mode="Test")
 
         # loss_sum /= iters
-        auc, fpr, tpr = computeAUC (output_list, label_list)
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval (output_list, label_list, pathlist)
         print ("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
         auc, loss_sum, acc, precision, recall, f1, gmean))

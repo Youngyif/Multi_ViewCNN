@@ -4,6 +4,7 @@ from dataloader.myloader_multiscale import  Myloader
 from PIL import Image
 import numpy as np
 import random
+from trainer import *
 
 class RandomGammaCorrection():
     def __init__(self):
@@ -146,14 +147,16 @@ class DataLoader (object):
 
     def asoct_data(self, data_path, label_path, rootpath):
         imgSize = 244
-        train_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/train_test.txt"
-        test_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/val_test.txt"
+        # train_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/train_test.txt"
+        # test_dir = data_path + "/oneclock_data_split/one_openandnarrow_split/val_all.txt"
         # train_dir = data_path + "/wide_split/train_all.txt"  #
         # test_dir = data_path + "/wide_split/val_all.txt"  #
         # train_dir = data_path + "/wide_split/quartersplit/train_quater.txt"  #
         # test_dir = data_path + "/wide_split/quartersplit/val_quater.txt"  #
         # normalize = transforms.Normalize (mean=[0.145, 0.145, 0.145],
         #                                   std=[0.189, 0.189, 0.189])
+        train_dir = data_path + "/oneclock_data_split/trainv5.txt"
+        test_dir = data_path + "/oneclock_data_split/valv5.txt"
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])
         imagenet_pca = {
@@ -168,11 +171,11 @@ class DataLoader (object):
             Myloader (rootpath, train_dir, label_path, transforms.Compose ([
                 # transforms.Scale(600),
                 # transforms.Grayscale (num_output_channels=1), ##转为灰度图 output channel 由3改为1
-                transforms.Scale (imgSize),
+                transforms.Scale (imgSize+10),
                 # transforms.RandomHorizontalFlip (),
                 # transforms.RandomVerticalFlip(),
                 transforms.CenterCrop(imgSize),
-                # transforms.RandomRotation(15),
+                transforms.RandomRotation(10),
                 transforms.ToTensor (),
                 # auxtransform.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
                 # auxtransform.Lighting(alphastd=0.1, eigval=imagenet_pca['eigval'], eigvec=imagenet_pca['eigvec']),
@@ -200,4 +203,11 @@ class DataLoader (object):
         return train_loader, test_loader
 
 
-
+if __name__ == '__main__':
+    opt = NetOption()
+    data_loader = DataLoader(dataset=opt.data_set, data_path=opt.data_path, label_path=opt.label_path,
+                             batch_size=opt.batchSize, rootpath=opt.rootpath,
+                             n_threads=opt.nThreads, ten_crop=opt.tenCrop, dataset_ratio=opt.datasetRatio)
+    train_loader, test_loader = data_loader.getloader ()
+    for i,j,k,_ in train_loader:
+        print(i)

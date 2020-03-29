@@ -107,12 +107,15 @@ def main(net_opt=None):
         model = my_mvcnn(opt.numOfView)
     if opt.netType =="resnet3d":
         model = resnet3d(num_classes=opt.numclass, use_nl=True)
+        if opt.resume and opt.pretrain:
+            print("!!can not load two model at one time!!")
+            return
         if opt.resume:
             state_dict = check_point_params["model"]
             model.load_state_dict(state_dict)
         if opt.pretrain:
             mydict = model.state_dict()
-            state_dict = torch.load(opt.resume)
+            state_dict = torch.load(opt.pretrain)
             # print(state_dict)
             pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
             mydict.update(pretrained_dict)

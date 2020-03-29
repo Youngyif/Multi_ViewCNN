@@ -47,10 +47,10 @@ def make_dataset(rootpath, root, label_df):
             vertical_dark = int(np.load(darkrealpath + "/vertical_r.npy"))
         all_image_path = list (os.listdir (lightrealpath))
         all_image_path.sort ()
-        images_light.append ((all_image_path[0:21], lightrealpath, label, region, vertical_light, org_path))
+        images_light.append ((all_image_path[0:21], lightrealpath, label, region, vertical_light))
         all_image_path1 = list (os.listdir (darkrealpath))
         all_image_path1.sort ()
-        images_dark.append ((all_image_path1[0:21], darkrealpath, label, region, vertical_dark, org_path))
+        images_dark.append ((all_image_path1[0:21], darkrealpath, label, region, vertical_dark))
 
     return images_light, images_dark
 
@@ -79,22 +79,18 @@ def make3d(tup, transform):   #tup:([21 images], label, region)
     rgc.randomize_parameters()
     vrc.randomize_parameters(vertical_center)
     imglist = []
-    fullimagelist = []
     for imgpath in lists:
-        fullimage = Image.open(rootpath + "/" + imgpath).convert("RGB")
-        orgimage = fullimage.crop(regionCor)
+        orgimage = Image.open(rootpath + "/" + imgpath).convert("RGB").crop(regionCor)
         crop_image = np.asarray(vrc(orgimage))
         crop_image = np.asarray(rgc(crop_image))
         img = Image.fromarray(crop_image, 'RGB')
         if region == "right":
             img = img.transpose(Image.FLIP_LEFT_RIGHT)
-            # img.save('/home/yangyifan/save/crop.jpg')
+            img.save('/home/yangyifan/save/crop.jpg')
         imglist.append(transform(img))
-        fullimagelist.append(transform(fullimage))
     # imgs = [transform (Image.open (rootpath + "/" + imgpath).convert ("RGB").crop (regionCor)) for imgpath in lists]
     input = torch.stack (imglist)
-    fullinput = torch.stack(fullimagelist)
-    return input, label, fullinput
+    return input, label
 
 class Myloader(data.Dataset):
     def __init__(self, rootpath, txtroot, label_dir, transform=None):  ##root: path before filename
@@ -110,9 +106,9 @@ class Myloader(data.Dataset):
     def __getitem__(self, index):
         images_light = self.images_light[index]
         images_dark = self.images_dark[index]
-        dark_input, label, darkfullinput = make3d(images_dark,   self.transform)
-        light_input, label, lightfullinput = make3d (images_light,   self.transform)
-        return (dark_input, darkfullinput), (light_input, lightfullinput), label, images_dark[5]
+        dark_input, label = make3d(images_dark,   self.transform)
+        light_input, label = make3d (images_light,   self.transform)
+        return dark_input, light_input, label, images_dark[0]
 
     def __len__(self):
         return len (self.images_light)
