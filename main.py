@@ -136,7 +136,8 @@ def main(net_opt=None):
 
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
-    trainer = Trainer_multiscale (model=model, opt=opt, optimizer=optimizer)
+    # trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
+    trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
     print ("|===>Create trainer")
 
     if opt.testOnly:

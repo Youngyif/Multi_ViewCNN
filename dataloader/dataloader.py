@@ -1,7 +1,8 @@
 import torch
 import torchvision.transforms as transforms
-from dataloader.myloader_multiscale import  Myloader
+# from dataloader.myloader_multiscale import  Myloader
 from PIL import Image
+from dataloader.my_loader_oneclock_newquarter import *
 import numpy as np
 import random
 from trainer import *
@@ -23,7 +24,7 @@ class RandomGammaCorrection():
         if random.random() < 0.5:
             self.gamma = 1 / self.gamma
 
-class VerticalCrop(object):
+class VerticalCrop(object):  
 
     def __init__(self, size, interpolation=Image.BILINEAR):
         self.size = size

@@ -18,7 +18,7 @@ class ContrastiveLoss(torch.nn.Module):
                                       (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
 
-        return euclidean_distance, loss_contrastive
+        return loss_contrastive
 
 
 

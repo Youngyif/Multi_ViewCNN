@@ -377,6 +377,8 @@ class resnet3d(nn.Module):
         n=1
         if opt.cat ==True:
             n=1
+        if opt.contra ==True:
+            n=2
         self.fc = nn.Linear(n*512 * block.expansion, num_classes)
 
         ##### multi scale
@@ -399,10 +401,16 @@ class resnet3d(nn.Module):
         self.layer4_m = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool_m = nn.AdaptiveAvgPool3d((1, 1, 1))
         n = 1
-        if opt.cat == True:
-            n = 1
         self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
 
+        self.fc_contra = nn.Sequential(
+            nn.Linear(n * 512 * block.expansion, 500),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(500, 500),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(500, 5))
 
         #####
         self.drop = nn.Dropout(0.5)
@@ -455,50 +463,50 @@ class resnet3d(nn.Module):
 
     def forward_single_mscale_single(self, x):
         x_d, x_l, fullx_d, fullx_l = x
-        x_d = self.conv1(x_d)
-        x_d = self.bn1(x_d)
-        x_d = self.relu(x_d)
-        x_d = self.maxpool1(x_d)
-        x_d = self.layer1(x_d)
-        x_d = self.maxpool2(x_d)
-        x_d = self.layer2(x_d)
-        x_d = self.layer3(x_d)
+        # x_d = self.conv1(x_d)
+        # x_d = self.bn1(x_d)
+        # x_d = self.relu(x_d)
+        # x_d = self.maxpool1(x_d)
+        # x_d = self.layer1(x_d)
+        # x_d = self.maxpool2(x_d)
+        # x_d = self.layer2(x_d)
+        # x_d = self.layer3(x_d)
 
-        # x_l = self.conv1(x_l)
-        # x_l = self.bn1(x_l)
-        # x_l = self.relu(x_l)
-        # x_l = self.maxpool1(x_l)
-        # x_l = self.layer1(x_l)
-        # x_l = self.maxpool2(x_l)
-        # x_l = self.layer2(x_l)
-        # x_l = self.layer3(x_l)
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
         # x = torch.cat((x_l, x_d), dim=1)
         # x = self.conv11(x)
         # print("xsize layer3", x_l.size())
-        x_d = self.layer4(x_d)
-        fullx_d = self.conv1_m(fullx_d)
-        fullx_d = self.bn1_m(fullx_d)
-        fullx_d = self.relu_m(fullx_d)
-        fullx_d = self.maxpool1_m(fullx_d)
-        fullx_d = self.layer1_m(fullx_d)
-        fullx_d = self.maxpool2_m(fullx_d)
-        fullx_d = self.layer2_m(fullx_d)
-        fullx_d = self.layer3_m(fullx_d)
+        x_l = self.layer4(x_l)
+        # fullx_d = self.conv1_m(fullx_d)
+        # fullx_d = self.bn1_m(fullx_d)
+        # fullx_d = self.relu_m(fullx_d)
+        # fullx_d = self.maxpool1_m(fullx_d)
+        # fullx_d = self.layer1_m(fullx_d)
+        # fullx_d = self.maxpool2_m(fullx_d)
+        # fullx_d = self.layer2_m(fullx_d)
+        # fullx_d = self.layer3_m(fullx_d)
 
-        # fullx_l = self.conv1_m(fullx_l)
-        # fullx_l = self.bn1_m(fullx_l)
-        # fullx_l = self.relu_m(fullx_l)
-        # fullx_l = self.maxpool1_m(fullx_l)
-        # fullx_l = self.layer1_m(fullx_l)
-        # fullx_l = self.maxpool2_m(fullx_l)
-        # fullx_l = self.layer2_m(fullx_l)
-        # fullx_l = self.layer3_m(fullx_l)
+        fullx_l = self.conv1_m(fullx_l)
+        fullx_l = self.bn1_m(fullx_l)
+        fullx_l = self.relu_m(fullx_l)
+        fullx_l = self.maxpool1_m(fullx_l)
+        fullx_l = self.layer1_m(fullx_l)
+        fullx_l = self.maxpool2_m(fullx_l)
+        fullx_l = self.layer2_m(fullx_l)
+        fullx_l = self.layer3_m(fullx_l)
         #
         # fullx = torch.cat((fullx_l, fullx_d), dim=1)
         # fullx = self.conv11_m(fullx)
-        fullx_d = self.layer4_m(fullx_d)
+        fullx_l = self.layer4_m(fullx_l)
 
-        x = torch.cat((fullx_d, x_d), dim=1)
+        x = torch.cat((fullx_l, x_l), dim=1)
         x = self.conv11_final(x)
         x = self.avgpool(x)
         x = self.drop(x)
@@ -567,11 +575,6 @@ class resnet3d(nn.Module):
         return x
 
     def forward_single_cat(self, x):
-        if opt.structure == True:
-            x = self.extract(x)
-            x_structure = x
-            B,N,C,H,W = x.size()
-            x = x.view(B,C,N,H,W)
         x_d,x_l = x
         x_d = self.conv1(x_d)
         x_d = self.bn1(x_d)
@@ -606,40 +609,31 @@ class resnet3d(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc(x)
         x = self.sigmoid(x)
-        if opt.structure == True:
-            return (x, x_structure)
         return x
 
-    def attention_forward_single(self, x):
-        # if opt.structure == True:
-        #     x = self.extract(x)
-        #     x_structure = x
-        #     B,N,C,H,W = x.size()
-        #     x = x.view(B,C,N,H,W)
-
+    def forward_single_contra(self, x):
         x_d, x_l = x
         # print(x_d.size())
         x_d = self.conv1(x_d)
-        # xsize = x_d.size()
-        # print("conv1", xsize)
         x_d = self.bn1(x_d)
         x_d = self.relu(x_d)
         x_d = self.maxpool1(x_d)
-        # xsize = x_d.size()
-        # print("beforelayer1", xsize)
+
         x_d = self.layer1(x_d)
-        # xsize = x_d.size()
-        # print("afterlayer1", xsize)
         x_d = self.maxpool2(x_d)
-        # xsize = x_d.size()
-        # print("aftermaxpool", xsize)
         x_d = self.layer2(x_d)
-        # xsize = x_d.size()
-        # print("afterlayer2", xsize)
         x_d = self.layer3(x_d)
-        # xsize = x_d.size()
-        # print("afterlayer3", xsize)
-        # x_d = self.layer4(x_d)
+        x_d = self.layer4(x_d)
+        x_d = self.avgpool(x_d)
+        ###get similarity vector
+        h_d = x_d
+        h_d = h_d.view(h_d.size(0), -1)
+        h_d = self.fc_contra(h_d)
+        ###
+        x_d = self.drop(x_d)
+        # print(x_d.size())
+        # x_d = x_d.view(x_d.shape[0], -1)
+        # x_d = self.fc_d(x_d)
 
         x_l = self.conv1(x_l)
         x_l = self.bn1(x_l)
@@ -649,28 +643,23 @@ class resnet3d(nn.Module):
         x_l = self.maxpool2(x_l)
         x_l = self.layer2(x_l)
         x_l = self.layer3(x_l)
-        # x_l = self.layer4(x_l)
-        # print(x_l.size())
-        B, C, N, H, W = x_l.size()
-        output = []
-        for i in range(N):
-            x_dn = x_d[:, :, i, ...]
-            x_ln = x_l[:, :, i, ...]
-            x = self.gf(x_dn, x_ln, x_dn, self.attentionblock5(x_dn, x_ln))
-            output.append(x.view(B, C, 1, H, W))
-        # print("dimension of output",len(output),output[0].size())
-        x = torch.cat(output, dim=2)
-        x = self.layer4(x)
-        x = self.avgpool(x)
-        x = self.drop(x)
+        x_l = self.layer4(x_l)
+        x_l = self.avgpool(x_l)
+        ###get similarity vector
+        h_l = x_l
+        h_l = h_l.view(h_l.size(0), -1)
+        sizehl = h_l.size()
+        h_l = self.fc_contra(h_l)
+        ###
 
+
+        x = torch.cat((x_l,x_d),dim=1)
+        x = self.drop(x)
         x = x.view(x.shape[0], -1)
+
         x = self.fc(x)
         x = self.sigmoid(x)
-        # if opt.structure == True:
-        #     return (x, x_structure)
-        return x
-
+        return h_d, h_l, x
 
     def forward_multi(self, x):
         clip_preds = []
@@ -685,35 +674,32 @@ class resnet3d(nn.Module):
         clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
         return clip_preds
 
-    def forward(self, batch):##x[0] is dark x[1] is light
-        # x=batch[1]
-        # B,N,C,H,W = x.size()
-        # x = x.view(B,C,N,H,W)
+    def forward(self, batch):##x[0] is dark x[1] is light Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         x_d = batch[0]
         x_l = batch[1]
-        fullx_l = batch[2]
-        fullx_d = batch[3]
-        B, N, C, H, W = x_l.size()
-        B1,N1,C1,H1,W1=fullx_d.size()
-        x = (x_d.view(B, C, N, H, W), x_l.view(B, C, N, H, W))
-        ms_x = (x_d.view(B, C, N, H, W), x_l.view(B, C, N, H, W), fullx_d.view(B1, C1, N1, H1, W1), fullx_l.view(B1, C1, N1, H1, W1))
+        fullx_d = batch[2]
+        fullx_l = batch[3]
+        x = (x_d, x_l)
+        ms_x = (x_d, x_l, fullx_d, fullx_l)
         batch = {'frames': x, 'frames1': ms_x} ##0 dark 1 light
         # 5D tensor == single clip
+        if opt.contra == True:
+            pred = self.forward_single_contra(batch['frames'])
         if opt.mscale == True:
             # print("multiscale cat")
-            # pred = self.forward_single_mscale_single(batch['frames1'])
-            pred = self.forward_single_mscale(batch['frames1'])
+            pred = self.forward_single_mscale_single(batch['frames1'])
+            # pred = self.forward_single_mscale(batch['frames1'])
         if opt.cat == True:
             # if batch['frames'].dim() == 5:
             # print("catmodel")
             pred = self.forward_single_cat(batch['frames'])
-        if opt.cat == False:
-            if opt.attention ==True:
-                print("attention")
-                pred = self.attention_forward_single(batch['frames'])
-            else:
-                # print("dark")
-                pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
+        # if opt.cat == False:
+        #     if opt.attention ==True:
+        #         print("attention")
+        #         pred = self.attention_forward_single(batch['frames'])
+        #     else:
+        #         print("light")
+        #         pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
 
         # 7D tensor == 3 crops/10 clips
         # elif batch['frames'].dim() == 7:
@@ -983,10 +969,10 @@ class dual_resnet3d(nn.Module):
         clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
         return clip_preds
 
-    def forward(self, batch):  ##x[0] is dark x[1] is light
+    def forward(self, batch):  ##x[0] is dark x[1] is light  add permute
         x = batch[0]
-        B, N, C, H, W = x.size()
-        x = x.view(B, C, N, H, W)
+        # B, N, C, H, W = x.size()
+        # x = x.view(B, C, N, H, W)
         batch = {'frames': x}  ##0 dark 1 light
         # 5D tensor == single clip
         if batch['frames'].dim() == 5:

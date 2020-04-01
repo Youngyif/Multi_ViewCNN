@@ -9,7 +9,8 @@ class NetOption (object):
         self.save_head_path = "/mnt/dataset/model/darklight/"  # where to save model and log code etc
         self.data_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/" # path for loading data set  \
         # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/3dlabel_open_narrow.csv"
-        self.label_path = "/home/yangyifan/code/multiviewCNN_quarter/multiViewCNN/Multi_ViewCNN/dataProcess/oneclockv4_open_narrow18.csv"
+        # self.label_path = "/home/yangyifan/code/multiviewCNN_quarter/multiViewCNN/Multi_ViewCNN/dataProcess/oneclockv4_open_narrow18.csv"###0330
+        self.label_path ="/home/yangyifan/code/multiviewCNN_quarter/multiViewCNN/Multi_ViewCNN/dataProcess/add_alone_clock/one_for_new_clock_labelv1.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/multi-viewCNN/dataProcess/label_version/v2_exisit_noaloneclock_half_3d_label.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/quartersplit/label_quarter.csv"
         # self.label_path = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/wide_split/label for all/label_half_opennarrow.csv"
@@ -18,7 +19,7 @@ class NetOption (object):
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
         self.nGPU = 2  # number of GPUs to use by default
-        self.GPU = 4# default gpu to use, options: range(nGPU)
+        self.GPU = 6# default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedyincreasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -41,16 +42,17 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d
-        self.experimentID = "newAug_multiscale_one_cat_resnet3d_0328"
+        self.experimentID = "test_permute_newone_contra_resnet3d_0401"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
         # self.cat = True
 
         self.cat = False
-        self.mscale = True
+        self.mscale = False
         self.structure = False
         self.attention = False
+        self.contra = True
         ###--draw Roc---###
         self.draw_ROC = False
         # ---------- Resume or Retrain options --------------------------------
