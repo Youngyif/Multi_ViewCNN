@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+# from models.model_mscale import *##0.84 auc model
 from models.modelDifine import  *
 import torch.autograd
 import time
@@ -12,6 +13,10 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 from models.contrastiveLoss import *
+from models.nt_xent  import *
+from models.Focal_loss_sigmoid  import *
+from models.circle_loss import convert_label_to_similarity, CircleLoss
+from models.utiils import PairwiseDistance
 
 single_train_time = 0
 single_test_time = 0
@@ -156,35 +161,17 @@ def readwrongpath(lists):
             res.append(j)
     return res
 
-# def one_to_quarter(dicts):
-#     # idlist = []
-#     dicts1 = collections.defaultdict(list)
-#     # for key in dicts:
-#     #     quarter = key
-#     #     print(quarter)
-#     #     splits = key.split("_")
-#     #     id = splits[0]+"_"+splits[1]+"_"+splits[2]
-#     #     index = splits[3]
-#     #     if int(index)>2:
-#     #         tail = "1"
-#     #     elif int(index)<=2:
-#     #         tail = "0"
-#     #     if id not in idlist:
-#     #         idlist.append(id+"_"+tail)
-#     for key in dicts:
-#         pred = int(dicts[key])
-#         splits = key.split("_")
-#         id = splits[0] + "_" + splits[1] + "_" + splits[2]
-#         index = splits[3]
-#         if int(index)>2:
-#             tail = "1"
-#         elif int(index)<=2:
-#             tail = "0"
-#         quarter = id+"_"+tail
-#         dicts1[quarter].append(pred)
-#     print(dicts1)
-#     for key in dicts1:
-#
+def one_to_quarter(dicts):
+    detailist=[]
+    prolist = []
+    for key in dicts:
+        probability = dicts[key]
+        detailist.append(key)
+        prolist.append(probability)
+    dicts_csv = {"details":detailist,"probability":prolist}
+    df_csv = pd.DataFrame(dicts_csv)
+    df_csv.to_csv("RU_probability_statistic_CONTRA_focal1.csv")
+
 
 
 
@@ -193,33 +180,23 @@ def readwrongpath(lists):
 
 
 def computeEval(outputs, labels, pathlist):
-    # dicts = {}
+    dicts = {}
     wronglist=[]
-    # print("lenofpred", len(outputs), len(labels),len(path))
-    # print(outputs)
-    # print(labels)
-    # print(pathlist)
-    # paths=np.concatenate (pathlist, axis=0)
     path = readwrongpath(pathlist)
     if isinstance (outputs, list):
         pred = np.concatenate (outputs, axis=0)
         y = np.concatenate (labels, axis=0)
-        # path = np.concatenate (labels, axis=0)
     else:
         pred = outputs
         y = labels
-        # path = pathlist
+    prolist = pred.copy()
     pred[pred >= 0.5] = 1
     pred[pred < 0.5] = 0
-    # print("pred_after_theshold",pred)
-    # print("y_after_theshold", y)
-    ##wrong_image
-    # print("lenofpred", len(pred), len(y), len(path))
     for i in range(len(pred)):
-        # dicts[path[i]] = pred[i]
+        dicts[path[i]] = prolist[i]
         if pred[i]!=y[i]:
             wronglist.append(path[i])
-    # one_to_quarter(dicts)
+    one_to_quarter(dicts)
     # acc
     acc = metrics.accuracy_score (y, pred)
     # tn, fp, fn, tp
@@ -280,7 +257,8 @@ def writeDiseaseType(x, y):
 def generateTarget(images, labels):
     target_disease = torch.LongTensor (labels.size (0)).zero_ () + int (1)
     reduce_labels = labels == target_disease
-    reduce_labels = reduce_labels.type_as (images)
+    # reduce_labels = reduce_labels.type_as (images)
+    reduce_labels = reduce_labels.float()
     return reduce_labels
 
 
@@ -450,53 +428,50 @@ class Trainer (object):
         start_time = time.time ()
         end_time = start_time
         for i, (dark_input, light_input, labels, image_name) in enumerate (test_loader):
-            pathlist.append(image_name)
-            start_time = time.time ()
-            data_time = start_time - end_time
+            with torch.no_grad():
+                pathlist.append(image_name)
+                start_time = time.time ()
+                data_time = start_time - end_time
 
-            # labels = generateTarget (dark_input, labels[1])
-            # reduce_labels = labels
-            # labels = labels.cuda ()
+                labels_synechia = generateTarget(dark_input[0], labels)
+                reduce_labels_synechia = labels_synechia
 
-            labels_synechia = generateTarget(dark_input[0], labels)
-            reduce_labels_synechia = labels_synechia
+                labels_synechia = labels_synechia.cuda()
+                labels_var = Variable(labels_synechia)
 
-            labels_synechia = labels_synechia.cuda()
-            labels_var = Variable(labels_synechia)
-
-            # labels_opennarrow = generateTarget(dark_input, labels[0])
-            # reduce_labels_opennarrow = labels_opennarrow
-            # labels_opennarrow = labels_opennarrow.cuda()
-            # labels_opennarrow_var = Variable(labels_opennarrow)
+                # labels_opennarrow = generateTarget(dark_input, labels[0])
+                # reduce_labels_opennarrow = labels_opennarrow
+                # labels_opennarrow = labels_opennarrow.cuda()
+                # labels_opennarrow_var = Variable(labels_opennarrow)
 
 
-            with torch.no_grad ():
-                # labels_var = Variable (labels)
+
+                    # labels_var = Variable (labels)
                 labels_var = Variable(labels_var)
-                # labels_opennarrow_var = Variable(labels_opennarrow_var)
+                    # labels_opennarrow_var = Variable(labels_opennarrow_var)
 
 
-            dark_input= dark_input.cuda ()
-            light_input=light_input.cuda()
-            with torch.no_grad ():
+                dark_input= dark_input.cuda ()
+                light_input=light_input.cuda()
+
                 dark_var = Variable (dark_input)
                 light_var = Variable (light_input)
 
 
-            # output, loss = self.forward (dark_var, light_var, labels_var)
-            output, loss = self.forward(dark_var, light_var, labels_var)
+                # output, loss = self.forward (dark_var, light_var, labels_var)
+                output, loss = self.forward(dark_var, light_var, labels_var)
 
-            loss_sum += float(loss.data)/iters
-            prediction = output.data.cpu ()
-            output_list.append (prediction.numpy ())
-            # label_list.append (reduce_labels.cpu ().numpy ())
-            label_list.append (reduce_labels_synechia.cpu ().numpy ())
-            end_time = time.time ()
-            iter_time = end_time - start_time
+                loss_sum += float(loss.data)/iters
+                prediction = output.data.cpu ()
+                output_list.append (prediction.numpy ())
+                # label_list.append (reduce_labels.cpu ().numpy ())
+                label_list.append (reduce_labels_synechia.cpu ().numpy ())
+                end_time = time.time ()
+                iter_time = end_time - start_time
 
-            printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
-                         # loss.data[0], mode="Test")
-                         loss.data, mode="Test")
+                printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                             # loss.data[0], mode="Test")
+                             loss.data, mode="Test")
 
         # loss_sum /= iters
         auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
@@ -505,8 +480,202 @@ class Trainer (object):
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
+def generate_factor(T, T_max=200):
+    # a = (1-(math.pow(float((T/T_max)),2)))
+    # a = (math.pow (float ((T / T_max)), 2))
+    a =  (1 - (math.pow (float ((T / T_max)), 2)))
+    return a
 
 class Trainer_contra(object):
+    realLabelsarr = []
+    predictLabelsarr = []
+
+    def __init__(self, model, opt, optimizer=None):
+        self.opt = opt
+        # self.l2_dist = PairwiseDistance (2)
+        self.criterion_focal = FocalLoss(alpha=0.75, gamma=2) ###记得改回来
+        self.model = model
+        # print (model)
+        if self.opt.trainingType == 'onevsall':
+            self.criterion = nn.BCELoss().cuda()
+        else:
+            self.criterion = nn.CrossEntropyLoss().cuda()
+        self.sigmoid = nn.Sigmoid()
+        self.criterion_contra = ContrastiveLoss(margin=opt.margin)
+        self.lr = self.opt.LR
+        # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
+        #                                              lr=self.lr,
+        #                                              eps=1,
+        #                                              momentum=self.opt.momentum,
+        #                                              weight_decay=self.opt.weightDecay)
+        self.optimzer = optimizer or torch.optim.SGD(self.model.parameters(),
+                                                     lr=self.lr,
+                                                     momentum=self.opt.momentum,
+                                                     weight_decay=self.opt.weightDecay,
+                                                     nesterov=True)
+        self.factor=0
+    def updateopts(self):
+        self.optimzer = torch.optim.SGD(self.model.parameters(),
+                                        lr=self.lr,
+                                        momentum=self.opt.momentum,
+                                        weight_decay=self.opt.weightDecay,
+                                        nesterov=True)
+
+    def updatelearningrate(self, epoch):
+        self.lr = getlearningrate(epoch=epoch, opt=self.opt)
+        # update learning rate of model optimizer
+        for param_group in self.optimzer.param_groups:
+            param_group['lr'] = self.lr
+
+    def custom_replace(self, tensor, on_zero, on_non_zero):
+        # we create a copy of the original tensor,
+        # because of the way we are replacing them.
+        res = tensor.clone()
+        res[tensor == 0] = on_zero
+        res[tensor != 0] = on_non_zero
+        return res
+
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
+        # forward and backward and optimize
+        Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
+        h_d, h_l, x = self.model(Pair)  #h_d, h_l, x
+        # distance = self.l2_dist.forward(h_d, h_l)
+        # pred_logits = self.sigmoid(distance)
+        labels_contra = self.custom_replace(labels_var, 1., 0.)
+        if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
+            if opt.contra_focal == True:
+
+                loss0 = self.criterion_focal(x, labels_var)
+                # print("bce")
+                # loss0 = self.criterion (pred_logits, labels_var)
+            else:
+                loss0 = self.criterion(x, labels_var)
+
+            if opt.multiway_contra:
+                h_d_1, h_d_2, h_d_3 =  h_d["h_d_1"],  h_d["h_d_2"], h_d["h_d_3"]
+                h_l_1, h_l_2, h_l_3 = h_l["h_l_1"], h_l["h_l_2"], h_l["h_l_3"]
+                loss1 = 0.3*self.criterion_contra (h_d_1, h_l_1, labels_contra)+0.3*self.criterion_contra (h_d_2, h_l_2, labels_contra
+                )+0.3*self.criterion_contra (h_d_3, h_l_3, labels_contra)
+            else:
+                loss1 = self.criterion_contra(h_d,h_l,labels_contra)
+            # loss1 = self.criterion_contra(h_d, h_l, labels_var)
+            # loss = loss0+0.1*loss1
+        else:
+            loss = None
+        # print("0.1")
+        return x, loss0, loss1
+
+    def backward(self, loss):
+        self.optimzer.zero_grad()
+        loss.backward()
+
+        self.optimzer.step()
+
+    def train(self, epoch, train_loader):
+        loss_sum = 0
+        iters = len(train_loader)
+        output_list = []
+        label_list = []
+        self.updatelearningrate(epoch)
+
+        self.model.train()
+
+        start_time = time.time()
+        end_time = start_time
+        self.factor = generate_factor(T = epoch)
+        print("training", self.factor)
+        for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
+            self.model.train()
+            start_time = time.time()
+            data_time = start_time - end_time
+            """
+            label for two branch
+
+            """
+            labels_synechia = generateTarget(dark_input[0], labels)
+            reduce_labels_synechia = labels_synechia
+            labels_synechia = labels_synechia.cuda()
+            labels_var = Variable(labels_synechia)
+
+
+            dark_var = Variable(dark_input[0].cuda())
+            light_var = Variable(light_input[0].cuda())
+            dark_full_var = Variable(dark_input[1].cuda())
+            light_full_var = Variable(light_input[1].cuda())
+            output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+            prediction = output.data.cpu()
+            output_list.append(prediction.numpy())
+            label_list.append(reduce_labels_synechia.cpu().numpy())
+
+            loss = loss0+opt.loss_ratio*loss1
+            # loss = self.factor*loss0+ (1-self.factor)*loss1
+            self.backward(loss)
+            loss_sum += float(loss.data)
+            # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
+            # You can fix this by writing total_loss += float(loss) instead.
+            end_time = time.time()
+
+            iter_time = end_time - start_time
+
+            # printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+            #             loss.data, mode="Train")
+        loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        return auc, loss_sum
+
+    def test(self, epoch, test_loader):
+        loss_sum = 0
+        iters = len(test_loader)
+        output_list = []
+        label_list = []
+        pathlist = []
+        self.model.eval()
+        print ("testing", self.factor)
+        start_time = time.time()
+        end_time = start_time
+        for i, (dark_input, light_input, labels, image_name) in enumerate(test_loader):
+            with torch.no_grad():
+                pathlist.append(image_name)
+                start_time = time.time()
+                data_time = start_time - end_time
+
+                labels_synechia = generateTarget(dark_input[0], labels)
+                reduce_labels_synechia = labels_synechia
+
+                labels_synechia = labels_synechia.cuda()
+                labels_var = Variable(labels_synechia)
+                labels_var = Variable(labels_var)
+
+
+                dark_var = Variable(dark_input[0].cuda())
+                light_var = Variable(light_input[0].cuda())
+                dark_full_var = Variable(dark_input[1].cuda())
+                light_full_var = Variable(light_input[1].cuda())
+                output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+                loss = loss0 + opt.loss_ratio * loss1
+                # loss = self.factor * loss0 + (1 - self.factor) * loss1
+                loss_sum += float(loss.data) / iters
+                prediction = output.data.cpu()
+                output_list.append(prediction.numpy())
+                # label_list.append (reduce_labels.cpu ().numpy ())
+                label_list.append(reduce_labels_synechia.cpu().numpy())
+                end_time = time.time()
+                iter_time = end_time - start_time
+
+                # printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                            # loss.data[0], mode="Test")
+                            # loss.data, mode="Test")
+
+        # loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval(output_list, label_list, pathlist)
+        print("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
+            auc, loss_sum, acc, precision, recall, f1, gmean))
+        return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+
+
+class Trainer_contra_learning_2(object):
     realLabelsarr = []
     predictLabelsarr = []
 
@@ -518,8 +687,201 @@ class Trainer_contra(object):
             self.criterion = nn.BCELoss().cuda()
         else:
             self.criterion = nn.CrossEntropyLoss().cuda()
-        if opt.contra == True:
-            self.criterion_contra = ContrastiveLoss()
+        self.lr = self.opt.LR
+        # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
+        #                                              lr=self.lr,
+        #                                              eps=1,
+        #                                              momentum=self.opt.momentum,
+        #                                              weight_decay=self.opt.weightDecay)
+        self.optimzer = optimizer or torch.optim.SGD(self.model.parameters(),
+                                                     lr=self.lr,
+                                                     momentum=self.opt.momentum,
+                                                     weight_decay=self.opt.weightDecay,
+                                                     nesterov=True)
+
+    def updateopts(self):
+        self.optimzer = torch.optim.SGD(self.model.parameters(),
+                                        lr=self.lr,
+                                        momentum=self.opt.momentum,
+                                        weight_decay=self.opt.weightDecay,
+                                        nesterov=True)
+
+    def updatelearningrate(self, epoch):
+        self.lr = getlearningrate(epoch=epoch, opt=self.opt)
+        # update learning rate of model optimizer
+        for param_group in self.optimzer.param_groups:
+            param_group['lr'] = self.lr
+
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
+        # forward and backward and optimize
+
+        Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
+        # print("pair0size", Pair[0].size())
+        # labelsize = labels_var[1].size()
+        # pairsize = Pair[0].size()
+        output = self.model(Pair)
+        # outputsize = output[0].size()
+        if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
+            loss = self.criterion(output, labels_var)
+        return output, loss
+
+    # def forward(self, dark_input_var, light_input_var, labels_var=None): ##forward for two_branch
+    #     # forward and backward and optimize   x_opennarrow, x_sysnec labels_opennarrow_var,labels_synechia_var
+    #     Pair = (dark_input_var, light_input_var)
+    #     output = self.model (Pair)
+    #     if labels_var is not None :
+    #         loss1 = self.criterion (output[0], labels_var[0])
+    #         loss2 = self.criterion(output[1], labels_var[1])
+    #         print("loss", loss1, loss2)
+    #     else:
+    #         loss = None
+    #
+    #     return output[0], (0.5*loss1)+loss2
+
+    def backward(self, loss):
+        self.optimzer.zero_grad()
+        loss.backward()
+
+        self.optimzer.step()
+
+    def train(self, epoch, train_loader):
+        loss_sum = 0
+        iters = len(train_loader)
+        output_list = []
+        label_list = []
+        self.updatelearningrate(epoch)
+
+        self.model.train()
+
+        start_time = time.time()
+        end_time = start_time
+
+        for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
+            self.model.train()
+            start_time = time.time()
+            data_time = start_time - end_time
+            """
+            label for two branch
+
+            """
+            labels_synechia = generateTarget(dark_input[0], labels)
+            reduce_labels_synechia = labels_synechia
+            labels_synechia = labels_synechia.cuda()
+            labels_var = Variable(labels_synechia)
+
+            # labels_opennarrow = generateTarget(dark_input, labels[0])
+            # reduce_labels_opennarrow = labels_opennarrow
+            # labels_opennarrow = labels_opennarrow.cuda()
+            # labels_opennarrow_var = Variable(labels_opennarrow)
+
+            ####  process image
+            # labels = generateTarget (dark_input, labels[1])
+            # reduce_labels = labels
+            # labels = labels.cuda ()
+            # labels_var = Variable(labels)
+
+            dark_var = Variable(dark_input[0].cuda())
+            light_var = Variable(light_input[0].cuda())
+            dark_full_var = Variable(dark_input[1].cuda())
+            light_full_var = Variable(light_input[1].cuda())
+            output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+
+            prediction = output.data.cpu()
+
+            output_list.append(prediction.numpy())
+            # label_list.append (reduce_labels.cpu ().numpy ())
+            label_list.append(reduce_labels_synechia.cpu().numpy())
+
+            self.backward(loss)
+            loss_sum += float(loss.data)
+            # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
+            # You can fix this by writing total_loss += float(loss) instead.
+            end_time = time.time()
+
+            iter_time = end_time - start_time
+
+            printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                        loss.data, mode="Train")
+        loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        return auc, loss_sum
+
+    def test(self, epoch, test_loader):
+        loss_sum = 0
+        iters = len(test_loader)
+        output_list = []
+        label_list = []
+        pathlist = []
+        self.model.eval()
+
+        start_time = time.time()
+        end_time = start_time
+        for i, (dark_input, light_input, labels, image_name) in enumerate(test_loader):
+            with torch.no_grad():
+                pathlist.append(image_name)
+                start_time = time.time()
+                data_time = start_time - end_time
+
+                labels_synechia = generateTarget(dark_input[0], labels)
+                reduce_labels_synechia = labels_synechia
+
+                labels_synechia = labels_synechia.cuda()
+                labels_var = Variable(labels_synechia)
+
+                # labels_opennarrow = generateTarget(dark_input, labels[0])
+                # reduce_labels_opennarrow = labels_opennarrow
+                # labels_opennarrow = labels_opennarrow.cuda()
+                # labels_opennarrow_var = Variable(labels_opennarrow)
+
+
+                    # labels_var = Variable (labels)
+                # labels_var = Variable(labels_var)
+                    # labels_opennarrow_var = Variable(labels_opennarrow_var)
+
+
+                dark_var = Variable(dark_input[0].cuda())
+                light_var = Variable(light_input[0].cuda())
+                dark_full_var = Variable(dark_input[1].cuda())
+                light_full_var = Variable(light_input[1].cuda())
+                output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+
+                # output, loss = self.forward (dark_var, light_var, labels_var)
+                # output, loss = self.forward(dark_var, light_var, labels_var)
+
+                loss_sum += float(loss.data) / iters
+                prediction = output.data.cpu()
+                output_list.append(prediction.numpy())
+                # label_list.append (reduce_labels.cpu ().numpy ())
+                label_list.append(reduce_labels_synechia.cpu().numpy())
+                end_time = time.time()
+                iter_time = end_time - start_time
+
+                printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                            # loss.data[0], mode="Test")
+                            loss.data, mode="Test")
+
+        # loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval(output_list, label_list, pathlist)
+        print("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
+            auc, loss_sum, acc, precision, recall, f1, gmean))
+        return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+
+
+class Trainer_contra_learning(object):
+    realLabelsarr = []
+    predictLabelsarr = []
+
+    def __init__(self, model, opt, optimizer=None):
+        self.opt = opt
+        self.model = model
+        # if self.opt.trainingType == 'onevsall':
+        #     self.criterion = nn.BCELoss().cuda()
+        # else:
+        #     self.criterion = nn.CrossEntropyLoss().cuda()
+        if opt.contra_learning == True:
+            self.criterion_contra_learning = NTXentLoss(device="cuda",batch_size=opt.batchSize,temperature=0.5, use_cosine_similarity=True)
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
@@ -555,18 +917,17 @@ class Trainer_contra(object):
 
     def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
         # forward and backward and optimize
-        # print("darkinputsize", dark_input_var.size())
+
         Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
-        # print("pair0size", Pair[0].size())
-        # labelsize = labels_var[1].size()
-        # pairsize = Pair[0].size()
-        h_d, h_l, x = self.model(Pair)  #h_d, h_l, x
-        labels_contra = self.custom_replace(labels_var, 1., 0.)
-        # outputsize = output[0].size()
+
+        h_d, h_l = self.model(Pair)  #h_d, h_l
+        # print(h_d.size())
+        # print(h_l.size())
+        x = None
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
-            loss0 = self.criterion(x, labels_var)
-            loss1 = self.criterion_contra(h_d,h_l,labels_contra)
-            loss = loss0+loss1
+            # loss0 = self.criterion(x, labels_var)
+            loss1 = self.criterion_contra_learning(h_d, h_l)
+            loss = loss1
         else:
             loss = None
         return x, loss
@@ -634,11 +995,9 @@ class Trainer_contra(object):
             output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var,labels_var)
             # output, loss = self.forward(dark_var, light_var, (labels_opennarrow_var,labels_synechia_var))
 
-            prediction = output.data.cpu()
-
-            output_list.append(prediction.numpy())
-            # label_list.append (reduce_labels.cpu ().numpy ())
-            label_list.append(reduce_labels_synechia.cpu().numpy())
+            # prediction = output.data.cpu()
+            # output_list.append(prediction.numpy())
+            # label_list.append(reduce_labels_synechia.cpu().numpy())
 
             self.backward(loss)
             loss_sum += float(loss.data)
@@ -651,9 +1010,10 @@ class Trainer_contra(object):
             printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
                         loss.data, mode="Train")
         loss_sum /= iters
-        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
-        print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
-        return auc, loss_sum
+        # auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        # print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        print("|===>Loss: %.4f " % (loss_sum))
+        return 0.0001, loss_sum
 
     def test(self, epoch, test_loader):
         loss_sum = 0
@@ -707,10 +1067,10 @@ class Trainer_contra(object):
                 output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
 
                 loss_sum += float(loss.data) / iters
-                prediction = output.data.cpu()
-                output_list.append(prediction.numpy())
-                # label_list.append (reduce_labels.cpu ().numpy ())
-                label_list.append(reduce_labels_synechia.cpu().numpy())
+                # prediction = output.data.cpu()
+                # output_list.append(prediction.numpy())
+                # # label_list.append (reduce_labels.cpu ().numpy ())
+                # label_list.append(reduce_labels_synechia.cpu().numpy())
                 end_time = time.time()
                 iter_time = end_time - start_time
 
@@ -719,11 +1079,12 @@ class Trainer_contra(object):
                             loss.data, mode="Test")
 
         # loss_sum /= iters
-        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
-        acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval(output_list, label_list, pathlist)
-        print("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
-            auc, loss_sum, acc, precision, recall, f1, gmean))
-        return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+        # auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        # acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval(output_list, label_list, pathlist)
+        # print("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
+            # auc, loss_sum, acc, precision, recall, f1, gmean))
+        # return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+        return 0.0001, loss_sum, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, None
 
 
 class Trainer_multiscale (object):
@@ -736,6 +1097,7 @@ class Trainer_multiscale (object):
         # print (model)
         if self.opt.trainingType == 'onevsall':
             self.criterion = nn.BCELoss ().cuda ()
+            self.criterion_focal = FocalLoss(alpha=0.75,gamma=2).cuda()
         else:
             self.criterion = nn.CrossEntropyLoss ().cuda ()
         self.lr = self.opt.LR
@@ -763,20 +1125,24 @@ class Trainer_multiscale (object):
         for param_group in self.optimzer.param_groups:
             param_group['lr'] = self.lr
 
-    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):##
         # forward and backward and optimize
         # print("darkinputsize", dark_input_var.size())
         Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         # print("pair0size", Pair[0].size())
-        pairsize = Pair[0].size()
+        # if opt.typedata == "light":
+        #     Pair = Pair[1]
+        # elif opt.typedata == "dark":
+        #     Pair = Pair[0]
+        # print(Pair.size())
         output = self.model (Pair)
-        outputsize = output.size()
         if labels_var is not None :
-            loss = self.criterion (output, labels_var)
+            loss1 = self.criterion_focal(output,labels_var)
+            # loss = self.criterion (output, labels_var)
         else:
             loss = None
 
-        return output, loss
+        return output, loss1
 
     def backward(self, loss):
         self.optimzer.zero_grad ()
@@ -796,7 +1162,7 @@ class Trainer_multiscale (object):
         start_time = time.time ()
         end_time = start_time
 
-        for i, (dark_input, light_input, labels, _) in enumerate (train_loader):
+        for i, (dark_input, light_input, labels, _) in enumerate (train_loader):##(dark_input, dark_full_input), (light_input, light_full_input), label, details
             self.model.train ()
             start_time = time.time ()
             data_time = start_time - end_time
@@ -814,11 +1180,6 @@ class Trainer_multiscale (object):
             light_var = Variable (light_input[0].cuda ())
             fulllight_var = Variable(light_input[1].cuda())
 
-            # print("fulllightvar TRAIN", fulllight_var.size())
-            # print("fulldarkvar", fulldark_var.size())
-            # print("lightvar", light_var.size())
-            # print("darkvar", dark_var.size())
-
             output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
 
             prediction = output.data.cpu ()
@@ -834,8 +1195,8 @@ class Trainer_multiscale (object):
 
             iter_time = end_time - start_time
 
-            printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
-                         loss.data, mode="Train")
+            # printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+            #              loss.data, mode="Train")
         loss_sum /= iters
         auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         print ("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
@@ -898,3 +1259,179 @@ class Trainer_multiscale (object):
         print ("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+
+
+class Trainer_circle(object):
+    realLabelsarr = []
+    predictLabelsarr = []
+
+    def __init__(self, model, opt, optimizer=None):
+        self.opt = opt
+        self.model = model
+        # print (model)
+        if self.opt.trainingType == 'onevsall':
+            self.criterion = nn.BCELoss().cuda()
+        else:
+            self.criterion = nn.CrossEntropyLoss().cuda()
+
+        self.criterion_contra = ContrastiveLoss()
+        self.lr = self.opt.LR
+        # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
+        #                                              lr=self.lr,
+        #                                              eps=1,
+        #                                              momentum=self.opt.momentum,
+        #                                              weight_decay=self.opt.weightDecay)
+        self.optimzer = optimizer or torch.optim.SGD(self.model.parameters(),
+                                                     lr=self.lr,
+                                                     momentum=self.opt.momentum,
+                                                     weight_decay=self.opt.weightDecay,
+                                                     nesterov=True)
+        self.criterion_circle = CircleLoss(m=0.25, gamma=80)
+
+    def updateopts(self):
+        self.optimzer = torch.optim.SGD(self.model.parameters(),
+                                        lr=self.lr,
+                                        momentum=self.opt.momentum,
+                                        weight_decay=self.opt.weightDecay,
+                                        nesterov=True)
+
+    def updatelearningrate(self, epoch):
+        self.lr = getlearningrate(epoch=epoch, opt=self.opt)
+        # update learning rate of model optimizer
+        for param_group in self.optimzer.param_groups:
+            param_group['lr'] = self.lr
+
+    def custom_replace(self, tensor, on_zero, on_non_zero):
+        # we create a copy of the original tensor,
+        # because of the way we are replacing them.
+        res = tensor.clone()
+        res[tensor == 0] = on_zero
+        res[tensor != 0] = on_non_zero
+        return res
+
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
+        # forward and backward and optimize
+        Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
+        h_d, h_l, x = self.model(Pair)  #h_d, h_l, x
+        labels_contra = self.custom_replace(labels_var, 1., 0.)
+        # l1 = labels_var
+        # l2 = labels_contra
+        if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
+            if opt.contra_focal == True:
+                self.criterion_focal = FocalLoss(alpha=0.75, gamma=2) ###记得改回来
+                loss0 = self.criterion_focal(x, labels_var)
+            else:
+                loss0 = self.criterion(x, labels_var)
+            loss1 = self.criterion_contra(h_d,h_l,labels_contra)
+            # loss1 = self.criterion_contra(h_d, h_l, labels_var)
+            loss = loss0+2*loss1
+        else:
+            loss = None
+        print("2")
+        return x, loss
+
+    def backward(self, loss):
+        self.optimzer.zero_grad()
+        loss.backward()
+
+        self.optimzer.step()
+
+    def train(self, epoch, train_loader):
+        loss_sum = 0
+        iters = len(train_loader)
+        output_list = []
+        label_list = []
+        self.updatelearningrate(epoch)
+
+        self.model.train()
+
+        start_time = time.time()
+        end_time = start_time
+
+        for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
+            self.model.train()
+            start_time = time.time()
+            data_time = start_time - end_time
+            """
+            label for two branch
+
+            """
+            labels_synechia = generateTarget(dark_input[0], labels)
+            reduce_labels_synechia = labels_synechia
+            labels_synechia = labels_synechia.cuda()
+            labels_var = Variable(labels_synechia)
+
+
+            dark_var = Variable(dark_input[0].cuda())
+            light_var = Variable(light_input[0].cuda())
+            dark_full_var = Variable(dark_input[1].cuda())
+            light_full_var = Variable(light_input[1].cuda())
+            output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var,labels_var)
+            prediction = output.data.cpu()
+            output_list.append(prediction.numpy())
+            label_list.append(reduce_labels_synechia.cpu().numpy())
+
+            self.backward(loss)
+            loss_sum += float(loss.data)
+            # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
+            # You can fix this by writing total_loss += float(loss) instead.
+            end_time = time.time()
+
+            iter_time = end_time - start_time
+
+            printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                        loss.data, mode="Train")
+        loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        return auc, loss_sum
+
+    def test(self, epoch, test_loader):
+        loss_sum = 0
+        iters = len(test_loader)
+        output_list = []
+        label_list = []
+        pathlist = []
+        self.model.eval()
+
+        start_time = time.time()
+        end_time = start_time
+        for i, (dark_input, light_input, labels, image_name) in enumerate(test_loader):
+            with torch.no_grad():
+                pathlist.append(image_name)
+                start_time = time.time()
+                data_time = start_time - end_time
+
+                labels_synechia = generateTarget(dark_input[0], labels)
+                reduce_labels_synechia = labels_synechia
+
+                labels_synechia = labels_synechia.cuda()
+                labels_var = Variable(labels_synechia)
+                labels_var = Variable(labels_var)
+
+
+                dark_var = Variable(dark_input[0].cuda())
+                light_var = Variable(light_input[0].cuda())
+                dark_full_var = Variable(dark_input[1].cuda())
+                light_full_var = Variable(light_input[1].cuda())
+                output, loss = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+
+                loss_sum += float(loss.data) / iters
+                prediction = output.data.cpu()
+                output_list.append(prediction.numpy())
+                # label_list.append (reduce_labels.cpu ().numpy ())
+                label_list.append(reduce_labels_synechia.cpu().numpy())
+                end_time = time.time()
+                iter_time = end_time - start_time
+
+                printresult(epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                            # loss.data[0], mode="Test")
+                            loss.data, mode="Test")
+
+        # loss_sum /= iters
+        auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
+        acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval(output_list, label_list, pathlist)
+        print("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
+            auc, loss_sum, acc, precision, recall, f1, gmean))
+        return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+
