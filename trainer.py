@@ -482,8 +482,8 @@ class Trainer (object):
 
 def generate_factor(T, T_max=200):
     # a = (1-(math.pow(float((T/T_max)),2)))
-    # a = (math.pow (float ((T / T_max)), 2))
-    a =  (1 - (math.pow (float ((T / T_max)), 2)))
+    a = (math.pow (float ((T / T_max)), 2))
+    # a =  (1 - (math.pow (float ((T / T_max)), 2)))
     return a
 
 class Trainer_contra(object):
@@ -583,6 +583,8 @@ class Trainer_contra(object):
         start_time = time.time()
         end_time = start_time
         self.factor = generate_factor(T = epoch)
+        # self.marginratio = generate_margin(T, T_max)
+        self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
         print("training", self.factor)
         for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
             self.model.train()
@@ -602,13 +604,14 @@ class Trainer_contra(object):
             light_var = Variable(light_input[0].cuda())
             dark_full_var = Variable(dark_input[1].cuda())
             light_full_var = Variable(light_input[1].cuda())
-            output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
+            output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)  ##loss0 focal loss1 contra
             prediction = output.data.cpu()
             output_list.append(prediction.numpy())
             label_list.append(reduce_labels_synechia.cpu().numpy())
 
-            loss = loss0+opt.loss_ratio*loss1
+            # loss = loss0+opt.loss_ratio*loss1
             # loss = self.factor*loss0+ (1-self.factor)*loss1
+            loss = self.factor * loss0 + loss1
             self.backward(loss)
             loss_sum += float(loss.data)
             # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
