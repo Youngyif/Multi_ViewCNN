@@ -60,10 +60,13 @@ class Visualization(object):
                 print("copy file error")
 
     def writeopt(self, opt):
+
         with open(self.opt_file, "w") as f:
             for k, v in opt.__dict__.items():
                 f.write(str(k)+": "+str(v)+"\n")
     def writepath(self, wrongpath):
+        if wrongpath == None:
+            return
         print(">>>>>write wrong path")
         if os.path.isfile(self.wrong_path):
             os.remove(self.wrong_path)

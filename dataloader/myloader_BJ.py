@@ -308,7 +308,7 @@ def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vert
             if region == "right":
                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
                 # img.save('/home/yangyifan/save/crop_INTERNAL.jpg')
-            # img.save('/home/yangyifan/save/crop_INTERNAL'+dl+str(counts1)+'.jpg')
+            img.save('/home/yangyifan/save/crop_INTERNAL'+dl+str(counts1)+'.jpg')
             imglist.append(transform(img))
             fullimglist.append(transform(fullimg))
             counts1+=1
