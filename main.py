@@ -1,5 +1,5 @@
-from opt.opt import *
-from dataloader.dataloader import *
+from opt.opt232 import *
+from dataloader.dataloader232 import *
 from visualization import *
 from termcolor import colored
 import torch.backends.cudnn as cudnn
@@ -43,7 +43,7 @@ def main(net_opt=None):
 
     start_time = time.time ()
     opt = net_opt or NetOption ()
-
+    print(opt.GPU)
     # set torch seed
     # init random seed
     torch.manual_seed (opt.manualSeed)

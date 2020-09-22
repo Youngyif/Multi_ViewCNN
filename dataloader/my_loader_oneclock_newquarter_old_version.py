@@ -21,167 +21,198 @@ def get_label(label_dir):
     return label_df
 
 def getone(realpath, indexs, region):
-    # print(realpath, indexs,region)
     if indexs==0:
         res = {}
         if region=="right":
-            pathlist = [(realpath + str(5), 'left', 5),(realpath + str(0), 'right', 0)]
+            pathlist = [(realpath + str(0), 'right', 0),(realpath + str(5), 'left', 5)]
             for path, region, i  in pathlist:
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_"+region[0]+".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
-                if i == 5:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                all_image_path.sort()
+                if i == 0:
+                    res["imagelist_half1"]= all_image_path[:11]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-                if i == 0:
-                    res["imagelist_half2"]= all_image_path[:11]
+                    # res.append((all_image_path[:11], vertical, path, region))
+                if i == 5:
+                    res["imagelist_half2"] = all_image_path[-10:]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
+                    # res.append((all_image_path[-10:], vertical, path, region))
         elif region=="left":
-            pathlist = [(realpath + str(5), 'right', 5), (realpath + str(0), 'left', 0)]
+            pathlist = [(realpath + str(0), 'left', 0), (realpath + str(5), 'right', 5)]
             for path, region, i in pathlist:
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
-
-                if i == 5:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                all_image_path.sort()
+                if i == 0:
+                    res["imagelist_half1"] = all_image_path[:11]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-                if i == 0:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    # res.append((all_image_path[:11], vertical, path, region))
+                if i == 5:
+                    res["imagelist_half2"] = all_image_path[-10:]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
     if indexs == 1:
         res = {}
         if region == "right":
             pathlist = [(realpath + str(0), 'right', 0), (realpath + str(1), 'right', 1)]
             for path, region, i in pathlist:
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
-
+                # print("loading vertical", path+ vertical_str)
 
                 vertical = int(np.load(path + vertical_str))
 
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 0:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 1:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
         elif region == "left":
             pathlist = [(realpath + str(0), 'left', 0), (realpath + str(1), 'left', 1)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 0:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 1:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
     if indexs == 2:
         res={}
         if region == "right":
             pathlist = [(realpath + str(1), 'right', 1), (realpath + str(2), 'right', 2)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 1:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 2:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
         elif region == "left":
             pathlist = [(realpath + str(1), 'left', 1), (realpath + str(2), 'left', 2)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 1:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 2:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
     if indexs == 3:
         res={}
         if region == "right":
             pathlist = [(realpath + str(2), 'right', 2), (realpath + str(3), 'right', 3)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 2:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 3:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
         elif region == "left":
             pathlist = [(realpath + str(2), 'left', 2), (realpath + str(3), 'left', 3)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 2:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
-
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 3:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
-
+                    # res.append((all_image_path[:11], vertical, path, region))
     if indexs == 4:
         res={}
         if region == "right":
             pathlist = [(realpath + str(3), 'right', 3), (realpath + str(4), 'right', 4)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                all_image_path.sort()
                 if i == 3:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
@@ -195,11 +226,14 @@ def getone(realpath, indexs, region):
         elif region == "left":
             pathlist = [(realpath + str(3), 'left', 3), (realpath + str(4), 'left', 4)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                # all_image_path.sort()
                 if i == 3:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
@@ -215,36 +249,46 @@ def getone(realpath, indexs, region):
         if region == "right":
             pathlist = [(realpath + str(4), 'right', 4), (realpath + str(5), 'right', 5)]
             for path, region, i in pathlist:
-
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path = sorted(all_image_path)
+                # all_image_path.sort()
                 if i == 4:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 5:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
+                    # res.append((all_image_path[:11], vertical, path, region))
         elif region == "left":
             pathlist = [(realpath + str(4), 'left', 4), (realpath + str(5), 'left', 5)]
             for path, region, i in pathlist:
+                # if region == "left":
+                #     vertical_str = "/vertical_l.npy"
+                # if region == "right":
+                #     vertical_str = "/vertical_r.npy"
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
-                all_image_path=sorted(all_image_path)
+                # all_image_path.sort()
                 if i == 4:
                     res["imagelist_half1"] = all_image_path[-10:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
+                    # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 5:
                     res["imagelist_half2"] = all_image_path[:11]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
+                    # res.append((all_image_path[:11], vertical, path, region))
 
-    # print(res)
     return res
 
 def make_dataset(rootpath, root, label_df):
@@ -266,16 +310,28 @@ def make_dataset(rootpath, root, label_df):
         lightrealpath = realpath + "/L/"
         res_d = getone(darkrealpath, int(indexs), region)
         res_l = getone(lightrealpath, int(indexs), region)
+        # if region =="left":
+        #     vertical_light = int(np.load(lightrealpath + "/vertical_l.npy"))
+        #     vertical_dark = int(np.load(darkrealpath + "/vertical_l.npy"))
+        # if region =="right":
+        #     vertical_light = int(np.load(lightrealpath + "/vertical_r.npy"))
+        #     vertical_dark = int(np.load(darkrealpath + "/vertical_r.npy"))
+        # all_image_path = list (os.listdir (lightrealpath))
+        # all_image_path.sort ()
+        # images_light.append ((all_image_path[0:21], lightrealpath, label, region, vertical_light))
+        # all_image_path1 = list (os.listdir (darkrealpath))
+        # all_image_path1.sort ()
+        # images_dark.append ((all_image_path1[0:21], darkrealpath, label, region, vertical_dark))
+        # res_l.extend([label])
+        # res_d.extend([label])
         res_l["label"] = label
-        res_l["details"] = org_path
         res_d["label"] = label
-        res_d["details"] = org_path
         images_light.append(res_l)
         images_dark.append(res_d)
 
     return images_light, images_dark
 
-def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vertical_half1":vertical_half1, "region_half1":region_half1,,,half2,,,,"lalel":label,"details":CS-001_od_left_1}
+def make3d(dicts, transform):   ##dict   {"imagelist_half1":imagelist1, "vertical_half1":vertical_half1, "region_half1":region_half1,,,half2,,,,"lalel":label}
     imgs = Image.open(dicts["imagelist_half1"][0]).convert("RGB")
     lists = [dicts["imagelist_half1"], dicts["imagelist_half2"]]
     label = dicts["label"]
@@ -289,8 +345,6 @@ def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vert
     imglist = []
     fullimglist = []
     index=0
-    details = dicts["details"]
-    counts1=0
     for imgpathlist in lists:
         for imgpath in imgpathlist:
             region = regionlist[index]
@@ -307,15 +361,12 @@ def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vert
             img = Image.fromarray(crop_image, 'RGB')
             if region == "right":
                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
-                # img.save('/home/yangyifan/save/crop_INTERNAL.jpg')
-            # img.save('/home/yangyifan/save/crop_INTERNAL'+dl+str(counts1)+'.jpg')
+                # img.save('/home/yangyifan/save/crop.jpg')
             imglist.append(transform(img))
             fullimglist.append(transform(fullimg))
-            counts1+=1
-        index+=1
     input = torch.stack (imglist).permute(1, 0, 2, 3)
     fullinput = torch.stack (fullimglist).permute(1, 0, 2, 3)
-    return input, label, fullinput, details
+    return input, label, fullinput
 
 class Myloader(data.Dataset):
     def __init__(self, rootpath, txtroot, label_dir, transform=None):  ##root: path before filename
@@ -331,9 +382,9 @@ class Myloader(data.Dataset):
     def __getitem__(self, index):
         images_light = self.images_light[index]
         images_dark = self.images_dark[index]
-        dark_input, label, dark_full_input, details = make3d(images_dark,   self.transform,"dark")
-        light_input, label, light_full_input, details = make3d (images_light,   self.transform,"light")
-        return (dark_input, dark_full_input), (light_input, light_full_input), label, details
+        dark_input, label, dark_full_input = make3d(images_dark,   self.transform)
+        light_input, label, light_full_input = make3d (images_light,   self.transform)
+        return (dark_input, dark_full_input), (light_input, light_full_input), label, images_dark["imagelist_half1"][0]
 
     def __len__(self):
         return len (self.images_light)

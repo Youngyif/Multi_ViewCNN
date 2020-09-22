@@ -13,10 +13,9 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 from models.contrastiveLoss import *
-from models.nt_xent  import *
+# from models.nt_xent  import *
 from models.Focal_loss_sigmoid  import *
-from models.circle_loss import convert_label_to_similarity, CircleLoss
-from models.utiils import PairwiseDistance
+# from models.utiils import PairwiseDistance
 
 single_train_time = 0
 single_test_time = 0
@@ -611,7 +610,7 @@ class Trainer_contra(object):
 
             # loss = loss0+opt.loss_ratio*loss1
             # loss = self.factor*loss0+ (1-self.factor)*loss1
-            loss = self.factor * loss0 + loss1
+            loss = self.factor * loss0 + (1-self.factor)*loss1
             self.backward(loss)
             loss_sum += float(loss.data)
             # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
