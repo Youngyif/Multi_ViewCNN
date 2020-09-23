@@ -480,8 +480,8 @@ class Trainer (object):
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
 def generate_factor(T, T_max=200):
-    # a = (1-(math.pow(float((T/T_max)),2)))
-    a = (math.pow (float ((T / T_max)), 2))
+    a = (1-(math.pow(float((T/T_max)),2)))
+    # a = (math.pow (float ((T / T_max)), 2))
     # a =  (1 - (math.pow (float ((T / T_max)), 2)))
     return a
 
@@ -543,9 +543,8 @@ class Trainer_contra(object):
         labels_contra = self.custom_replace(labels_var, 1., 0.)
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
             if opt.contra_focal == True:
-
+                # print("focal loss")
                 loss0 = self.criterion_focal(x, labels_var)
-                # print("bce")
                 # loss0 = self.criterion (pred_logits, labels_var)
             else:
                 loss0 = self.criterion(x, labels_var)
@@ -583,7 +582,7 @@ class Trainer_contra(object):
         end_time = start_time
         self.factor = generate_factor(T = epoch)
         # self.marginratio = generate_margin(T, T_max)
-        self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
+        # self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
         print("training", self.factor)
         for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
             self.model.train()
@@ -610,7 +609,7 @@ class Trainer_contra(object):
 
             # loss = loss0+opt.loss_ratio*loss1
             # loss = self.factor*loss0+ (1-self.factor)*loss1
-            loss = self.factor * loss0 + (1-self.factor)*loss1
+            loss = loss0 + self.factor*loss1
             self.backward(loss)
             loss_sum += float(loss.data)
             # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
