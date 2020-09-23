@@ -518,7 +518,7 @@ class Trainer_contra(object):
             self.criterion = nn.BCELoss().cuda()
         else:
             self.criterion = nn.CrossEntropyLoss().cuda()
-        if opt.contra == True:
+        if opt.contra == True or opt.multiscale:
             self.criterion_contra = ContrastiveLoss()
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
@@ -566,7 +566,8 @@ class Trainer_contra(object):
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
             loss0 = self.criterion(x, labels_var)
             loss1 = self.criterion_contra(h_d,h_l,labels_contra)
-            loss = loss0+loss1
+            loss = loss0+0.1*loss1
+            # print("0.1")
         else:
             loss = None
         return x, loss

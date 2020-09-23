@@ -43,13 +43,13 @@ class NetOption (object):
 
         # ---------- Model options --------------------------------------------
         # self.cat = True
-
+        self.multiscale = True
         self.cat = False
         self.mscale = False
         self.structure = False
         self.attention = False
         self.contra = False
-        self.contra_focal = True
+        self.contra_focal = False
         self.multiway_contra = False
         self.circle_loss = False
         self.contra_focal_bilinear = False
@@ -61,7 +61,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "resnet3d_contra_multiscale_margin=0.2_ratio=0.1_pretrain0921"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "resnet3d_contra_multiscale_margin=0.2_ratio=0.1_pretrain_0922"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10

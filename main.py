@@ -223,7 +223,7 @@ def main(net_opt=None):
     elif opt.contra_learning_2:
         print(">>>>trainer : contra_learning")
         trainer = Trainer_contra_learning_2(model=model, opt=opt, optimizer=optimizer)
-    elif opt.contra ==True or opt.contra_focal == True or opt.contra_focal_bilinear == True:
+    elif opt.contra ==True or opt.contra_focal == True or opt.contra_focal_bilinear == True or opt.multiscale==True:
         print(">>>>trainer : contra")
         trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
         # trainer = Trainer_multiscale(model=model, opt=opt, optimizer=optimizer)

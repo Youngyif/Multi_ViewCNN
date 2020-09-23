@@ -392,7 +392,7 @@ class resnet3d(nn.Module):
         n=1
         if opt.cat ==True:
             n=1
-        if opt.contra or opt.contra_focal == True or opt.contra_focal_bilinear == True:
+        if opt.contra or opt.contra_focal == True or opt.contra_focal_bilinear == True or opt.multiscale:
             n=2
         if opt.contra_single==True:
             n=1
@@ -424,22 +424,22 @@ class resnet3d(nn.Module):
         # n = 1
         # self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
         n=1
-        self.fc_contra_scale1 = nn.Sequential (
-            nn.Linear (512 , 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 128),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (128, 5))
-        self.fc_contra_scale2 = nn.Sequential (
-            nn.Linear (1024, 512),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (512, 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 5))
+        # self.fc_contra_scale1 = nn.Sequential (
+        #     nn.Linear (512 , 256),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (256, 128),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (128, 5))
+        # self.fc_contra_scale2 = nn.Sequential (
+        #     nn.Linear (1024, 512),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (512, 256),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (256, 5))
         self.fc_contra = nn.Sequential(
             nn.Linear(n * 512 * block.expansion, 1024),
             nn.ReLU(inplace=True),
@@ -449,7 +449,7 @@ class resnet3d(nn.Module):
 
             nn.Linear(500, 5))
         self.fc_contra_multi = nn.Sequential(
-            nn.Linear(12345, 1024),
+            nn.Linear(3584, 1024),
             nn.ReLU(inplace=True),
 
             nn.Linear(1024, 500),
@@ -781,6 +781,7 @@ class resnet3d(nn.Module):
     def forward_multiscale_contra(self, x):
         # print("contra")
         x_d, x_l = x[0],x[1]
+        batchSize =x_d.size(0)
         x_d = self.conv1(x_d)
         x_d = self.bn1(x_d)
         x_d = self.relu(x_d)
@@ -790,11 +791,10 @@ class resnet3d(nn.Module):
         x_d = self.maxpool2(x_d)
         x_d = self.layer2(x_d)
         h_d_1 = self.avgpool (x_d)
-        # h_d_1 = self.contra_module (h_d_1, 1)
-        h_d_1 = self.maxpool1(h_d_1)
+        # h_d_1 = x_d
         x_d = self.layer3(x_d)
         h_d_2 = self.avgpool(x_d)
-        # h_d_2 = self.contra_module (h_d_2, 2)
+        # h_d_2 = x_d
         x_d = self.layer4(x_d)
 
         x_d = self.avgpool(x_d)
@@ -809,18 +809,16 @@ class resnet3d(nn.Module):
         x_l = self.maxpool2(x_l)
         x_l = self.layer2(x_l)
         h_l_1 = self.avgpool (x_l)
-        # h_l_1 = self.contra_module (h_l_1, 1)
+        # h_l_1 = x_l
         x_l = self.layer3(x_l)
         h_l_2 = self.avgpool (x_l)
-        # h_l_2 = self.contra_module (h_l_2, 2)
+        # h_l_2 =x_l
         x_l = self.layer4(x_l)
         x_l = self.avgpool(x_l)
 
         # h_l_3 = self.contra_module(x_l, 3)
-        h_l = torch.cat((h_l_1.view(opt.batchSize, -1), h_l_2.view(opt.batchSize, -1), x_l.view(opt.batchSize, -1)))
-        h_d = torch.cat((h_d_1.view(opt.batchSize, -1), h_d_2.view(opt.batchSize, -1), x_d.view(opt.batchSize, -1)))
-        print(h_d.size())
-        print (h_l.size ())
+        h_l = torch.cat((h_l_1.view(batchSize, -1), h_l_2.view(batchSize, -1), x_l.view(batchSize, -1)), dim=1)
+        h_d = torch.cat((h_d_1.view(batchSize, -1), h_d_2.view(batchSize, -1), x_d.view(batchSize, -1)),dim=1)
         h_d = self.contra_module(h_d, flag=4)
         h_l = self.contra_module(h_l, flag=4)
 
@@ -830,15 +828,12 @@ class resnet3d(nn.Module):
 
         x = self.fc(x)
         x = self.sigmoid(x)
-        h_d = h_d
-        h_l = h_l
         return h_d, h_l, x
 
 
 
     def contra_module(self, x, flag):
-        h = x
-        h = h.view (h.size (0), -1)
+        h = x.view (x.size (0), -1)
         if flag==1:
             h = self.fc_contra_scale1 (h)
         elif flag==2:
@@ -846,6 +841,7 @@ class resnet3d(nn.Module):
         elif flag==3:
             h = self.fc_contra (h)
         elif flag==4:
+            # print("hsize", h.size())
             h = self.fc_contra_multi (h)
         h = F.normalize (h, dim=1)
         return h
@@ -1032,6 +1028,10 @@ class resnet3d(nn.Module):
             # pred = self.forward_dist_contra(batch["frames"])
         if opt.multiway_contra == True:
             pred = self.forward_multiway_contra (batch['frames'])
+        if opt.multiscale == True:
+            # print("multiscale")
+            pred = self.forward_multiscale_contra (batch['frames'])
+
         if opt.contra_focal_bilinear ==True:
             pred = self.forward_single_contra_bilinear(batch['frames'])
         if opt.contra_single == True:
@@ -2636,9 +2636,9 @@ if __name__ == '__main__':
     fullxd = torch.randn(4, 3, 21, 244, 244)
     x = (xl, xd, fullxd, fullxl)
     # x=(xl,xd)
-    model = resnet3d()
-    h, a = model(x)
-    print(a.size(),  h[0].size(), h[1].size())
+    model = resnet3d(num_classes=opt.numclass, use_nl=True)
+    h_d, h_l, a = model(x)
+    print(a.size(),  h_d.size(), h_l.size())
     # input_shape = (2,3, 21, 244, 244)
     # # model.replace_logits(1)
     #
