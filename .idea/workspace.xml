@@ -2,18 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="587ef742-da17-4d0e-a141-656eff43c87f" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/remote-mappings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataloader/dataloader232.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dataloader/my_loader_oneclock_newquarter232.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/Focal_loss_sigmoid.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Multiview_cnn.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Multiview_cnn.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/modelDifine.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/modelDifine.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/opt/opt232.py" beforeDir="false" afterPath="$PROJECT_DIR$/opt/opt232.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/saveModel/checkpoint.py" beforeDir="false" afterPath="$PROJECT_DIR$/saveModel/checkpoint.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/trainer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -322,7 +311,7 @@
       <workItem from="1599099957012" duration="97522000" />
       <workItem from="1600738946414" duration="2882000" />
       <workItem from="1600744343247" duration="9651000" />
-      <workItem from="1600850065097" duration="10060000" />
+      <workItem from="1600850065097" duration="10712000" />
     </task>
     <task id="LOCAL-00001" summary="0209 resnet3d twostage normalize">
       <created>1582043322700</created>
@@ -450,7 +439,21 @@
       <option name="project" value="LOCAL" />
       <updated>1600867970990</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="add separate backbone">
+      <created>1600914602799</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1600914602800</updated>
+    </task>
+    <task id="LOCAL-00020" summary="add separate backbone">
+      <created>1600914811929</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1600914811929</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -524,37 +527,38 @@
     <MESSAGE value="cumulative of loss ratio and margin" />
     <MESSAGE value="Fix some bugs" />
     <MESSAGE value="try decrease contra" />
-    <option name="LAST_COMMIT_MESSAGE" value="try decrease contra" />
+    <MESSAGE value="add separate backbone" />
+    <option name="LAST_COMMIT_MESSAGE" value="add separate backbone" />
   </component>
   <component name="WindowStateProjectService">
     <state x="361" y="71" key="#Deployment" timestamp="1600912292759">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="361" y="71" key="#Deployment/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600912292759" />
-    <state x="367" y="0" key="CommitChangelistDialog2" timestamp="1600867969651">
+    <state x="367" y="0" key="CommitChangelistDialog2" timestamp="1600914810579">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="367" y="0" key="CommitChangelistDialog2/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600867969651" />
+    <state x="367" y="0" key="CommitChangelistDialog2/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914810579" />
     <state x="550" y="167" key="FileChooserDialogImpl" timestamp="1600870234054">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state x="550" y="167" key="FileChooserDialogImpl/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600870234054" />
-    <state width="739" height="220" key="GridCell.Tab.0.bottom" timestamp="1600912332417">
+    <state width="739" height="220" key="GridCell.Tab.0.bottom" timestamp="1600914788632">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="739" height="220" key="GridCell.Tab.0.bottom/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600912332417" />
-    <state width="739" height="220" key="GridCell.Tab.0.center" timestamp="1600912332417">
+    <state width="739" height="220" key="GridCell.Tab.0.bottom/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914788632" />
+    <state width="739" height="220" key="GridCell.Tab.0.center" timestamp="1600914788632">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="739" height="220" key="GridCell.Tab.0.center/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600912332417" />
-    <state width="739" height="220" key="GridCell.Tab.0.left" timestamp="1600912332417">
+    <state width="739" height="220" key="GridCell.Tab.0.center/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914788632" />
+    <state width="739" height="220" key="GridCell.Tab.0.left" timestamp="1600914788631">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="739" height="220" key="GridCell.Tab.0.left/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600912332417" />
-    <state width="739" height="220" key="GridCell.Tab.0.right" timestamp="1600912332417">
+    <state width="739" height="220" key="GridCell.Tab.0.left/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914788631" />
+    <state width="739" height="220" key="GridCell.Tab.0.right" timestamp="1600914788632">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state width="739" height="220" key="GridCell.Tab.0.right/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600912332417" />
+    <state width="739" height="220" key="GridCell.Tab.0.right/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914788632" />
     <state x="270" y="57" key="SettingsEditor" timestamp="1600870256698">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
@@ -563,10 +567,10 @@
       <screen x="0" y="0" width="1536" height="824" />
     </state>
     <state width="498" height="446" key="SwitcherDM/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600850090438" />
-    <state x="361" y="145" key="Vcs.Push.Dialog.v2" timestamp="1600867974665">
+    <state x="361" y="145" key="Vcs.Push.Dialog.v2" timestamp="1600914818854">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
-    <state x="361" y="145" key="Vcs.Push.Dialog.v2/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600867974665" />
+    <state x="361" y="145" key="Vcs.Push.Dialog.v2/0.0.1536.824/1920.0.1536.824@0.0.1536.824" timestamp="1600914818854" />
     <state x="561" y="297" key="com.jetbrains.plugins.remotesdk.ui.RemoteMappingsConfiguration" timestamp="1600870255784">
       <screen x="0" y="0" width="1536" height="824" />
     </state>
