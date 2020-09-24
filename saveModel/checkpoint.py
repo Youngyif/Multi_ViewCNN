@@ -51,7 +51,7 @@ class CheckPoint(object):
             self.check_point_params['opts'] = opts
             self.check_point_params['resume_epoch'] = epoch
 
-            torch.save(self.check_point_params, self.save_path+"checkpoint" + str(epoch) +".pkl")
+            # torch.save(self.check_point_params, self.save_path+"checkpoint" + str(epoch) +".pkl")
             # torch.save(model, self.save_path + "checkpoint" + str(epoch) + ".pkl")
             if best_flag:
                 best_model = {'model': model.module.state_dict()}
@@ -61,7 +61,7 @@ class CheckPoint(object):
             self.check_point_params['opts'] = opts
             self.check_point_params['resume_epoch'] = epoch
 
-            torch.save(self.check_point_params, self.save_path + "checkpoint" + str(epoch) + ".pkl")
+            # torch.save(self.check_point_params, self.save_path + "checkpoint" + str(epoch) + ".pkl")
             # torch.save(model, self.save_path + "checkpoint" + str(epoch) + ".pkl")
             if best_flag:
                 best_model = {'model': model.state_dict()}

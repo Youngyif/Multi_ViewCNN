@@ -12,7 +12,7 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 from models.contrastiveLoss import *
-
+from models.Focal_loss_sigmoid import *
 single_train_time = 0
 single_test_time = 0
 single_train_iters = 0
@@ -516,9 +516,11 @@ class Trainer_contra(object):
         # print (model)
         if self.opt.trainingType == 'onevsall':
             self.criterion = nn.BCELoss().cuda()
+
         else:
             self.criterion = nn.CrossEntropyLoss().cuda()
-        if opt.contra == True:
+        if opt.contra_focal == True:
+            self.criterion_focal = FocalLoss (alpha=0.75, gamma=2)
             self.criterion_contra = ContrastiveLoss()
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
@@ -564,9 +566,9 @@ class Trainer_contra(object):
         labels_contra = self.custom_replace(labels_var, 1., 0.)
         # outputsize = output[0].size()
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
-            loss0 = self.criterion(x, labels_var)
+            loss0 = self.criterion_focal(x, labels_var)
             loss1 = self.criterion_contra(h_d,h_l,labels_contra)
-            loss = loss0+loss1
+            loss = loss0+0.1*loss1
         else:
             loss = None
         return x, loss

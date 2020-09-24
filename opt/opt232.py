@@ -19,7 +19,7 @@ class NetOption (object):
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
         self.nGPU = 1  # number of GPUs to use by default
-        self.GPU =1# default gpu to use, options: range(nGPU)
+        self.GPU =0# default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -43,13 +43,13 @@ class NetOption (object):
 
         # ---------- Model options --------------------------------------------
         # self.cat = True
-
         self.cat = False
         self.mscale = False
         self.structure = False
         self.attention = False
         self.contra = False
         self.contra_focal = True
+        self.twoway = True
         self.multiway_contra = False
         self.circle_loss = False
         self.contra_focal_bilinear = False
@@ -61,7 +61,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "resnet3d_contra_cumulative_loss_margin=0.2_ratio=0.1_pretrain0921"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "resnet3d_contra_separate_backbone_loss_margin=0.2_ratio=0.1_pretrain0921"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
@@ -90,12 +90,12 @@ class NetOption (object):
         # self.resume = "/home/datasets/CASIA2/model/darklight/log_asoct_resnet3d_18_onevsall_bs60_TEST_TIME_dark_resnet3d_0812/model/best_model.pkl"
         # self.resume = "/home/datasets/CASIA2/model/darklight/log_asoct_resnet3d_18_onevsall_bs60_TEST_TIME_LIGHT_resnet3d_0812/model/best_model.pkl"
         # self.resume = "/home/datasets/CASIA2/model/darklight/log_asoct_resnet3d_18_onevsall_bs32_TEST_TIME_CONTRA_resnet3d_0812/model/best_model.pkl"
-        self.resumeEpoch = 0  # manual epoch number for resume
+        self.resumeEpoch = 128  # manual epoch number for resume
         # self.retrain = "/mnt/dataset/model/darklight/log_asoct_Single_viewCNN_18_onevsall_bs16_half_mvcmm_twostage_pretrain_0213/model/best_model.pkl"
-        # self.pretrain = None
-        self.resume=None
+        self.pretrain = None
+        self.resume="/home/datasets/CASIA2/model/darklight/log_asoct_resnet3d_18_onevsall_bs8_resnet3d_contra_separate_backbone_loss_margin=0.2_ratio=0.1_pretrain0921/model/checkpoint127.pkl"
         # self.resume = "/home/datasets/CASIA2/model/darklight/log_asoct_resnet3d_18_onevsall_bs8_resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917/model/best_model.pkl"
-        self.pretrain = "/home/yangyifan/code/multiViewCNN/pretrained/i3d_r50_nl_kinetics.pth"
+        # self.pretrain = "/home/yangyifan/code/multiViewCNN/pretrained/i3d_r50_nl_kinetics.pth"
         # self.pretrain = "/mnt/dataset/model/darklight/log_asoct_dual_resnet3d_18_onevsall_bs4_half_opennarrow_fixBeforeFc_0219/model/best_model.pkl"
         # check parameters
         self.paramscheck ()

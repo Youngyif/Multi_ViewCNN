@@ -6,7 +6,7 @@ from torchvision.models import resnet18
 import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
-from opt.opt import *
+from opt.opt232 import *
 from torch.autograd import Variable
 from models.box_filter import BoxFilter
 import numpy as np
@@ -661,6 +661,28 @@ class resnet3d(nn.Module):
         x = self.sigmoid(x)
         return h_d, h_l, x
 
+    def forward_single_light_contra(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool1(x)
+        x = self.layer1(x)
+        x = self.maxpool2(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        h = x
+        h = h.view(h.size(0), -1)
+        h = self.fc_contra(h)
+
+        x = self.drop(x)
+        x = x.view(x.shape[0], -1)
+
+        x = self.fc(x)
+        x = self.sigmoid(x)
+        return h, x
+
     def forward_multi(self, x):
         clip_preds = []
         for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224
@@ -685,25 +707,12 @@ class resnet3d(nn.Module):
         # 5D tensor == single clip
         if opt.contra == True:
             pred = self.forward_single_contra(batch['frames'])
-        if opt.mscale == True:
-            # print("multiscale cat")
-            pred = self.forward_single_mscale_single(batch['frames1'])
-            # pred = self.forward_single_mscale(batch['frames1'])
-        if opt.cat == True:
-            # if batch['frames'].dim() == 5:
-            # print("catmodel")
-            pred = self.forward_single_cat(batch['frames'])
-        # if opt.cat == False:
-        #     if opt.attention ==True:
-        #         print("attention")
-        #         pred = self.attention_forward_single(batch['frames'])
-        #     else:
-        #         print("light")
-        #         pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
-
-        # 7D tensor == 3 crops/10 clips
-        # elif batch['frames'].dim() == 7:
-        #     pred = self.forward_multi(batch['frames'])
+        if opt.twoway:
+            print("twoway")
+            h_d, pred_d = self.forward_single_light_contra (x_d)
+            h_l, pred_l = self.forward_single_light_contra (x_l)
+            ensemble = (pred_d+pred_l)/2
+            pred = (h_d, h_l, ensemble)
 
         loss_dict = {}
         if 'label' in batch:
