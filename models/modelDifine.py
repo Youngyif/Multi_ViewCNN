@@ -373,7 +373,7 @@ class resnet3d(nn.Module):
         ###conv fusion
         # self.conv11_top = nn.Conv3d(6, 3, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         # self.conv11_m_top = nn.Conv3d(6, 3, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
-        self.conv11 = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        # self.conv11 = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         ###conv fusion
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
         self.bn1 = nn.BatchNorm3d(64)
@@ -396,76 +396,53 @@ class resnet3d(nn.Module):
             n=2
         if opt.contra_single==True:
             n=1
-        # self.fc_head = DenseNormReLU (in_feats=2048, out_feats=1024)
+
         self.fc = nn.Linear (n * 512 * block.expansion, num_classes)
         if opt.multifuse==True:
             self.fc = nn.Linear(n*256 * block.expansion, num_classes)
-        # self.dist_classify_fc = nn.Linear(512, num_classes)
-        # self.fc_bi = nn.Linear(256, num_classes)
+
         ##### multi scale
         # self.conv11_m = nn.Conv3d(2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         # self.conv11_final = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         # ##conv fusion
-        # self.inplanes = 64
-        # self.conv1_m = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
-        # self.bn1_m = nn.BatchNorm3d(64)
-        # self.relu_m = nn.ReLU(inplace=True)
-        # self.maxpool1_m = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
-        # self.maxpool2_m = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
-        #
-        # nonlocal_mod = 2 if use_nl else 1000
-        # self.layer1_m = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
-        # self.layer2_m = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
-        #                                temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
-        # self.layer3_m = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
-        #                                temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
-        # self.layer4_m = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
-        # self.avgpool_m = nn.AdaptiveAvgPool3d((1, 1, 1))
-        # n = 1
-        # self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
+        self.inplanes = 64
+        self.conv1_m = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
+        self.bn1_m = nn.BatchNorm3d(64)
+        self.relu_m = nn.ReLU(inplace=True)
+        self.maxpool1_m = nn.MaxPool3d(kernel_size=(2, 3, 3), stride=(2, 2, 2), padding=(0, 0, 0))
+        self.maxpool2_m = nn.MaxPool3d(kernel_size=(2, 1, 1), stride=(2, 1, 1), padding=(0, 0, 0))
+
+        nonlocal_mod = 2 if use_nl else 1000
+        self.layer1_m = self._make_layer(block, 64, layers[0], stride=1, temp_conv=[1, 1, 1], temp_stride=[1, 1, 1])
+        self.layer2_m = self._make_layer(block, 128, layers[1], stride=2, temp_conv=[1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer3_m = self._make_layer(block, 256, layers[2], stride=2, temp_conv=[1, 0, 1, 0, 1, 0],
+                                       temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
+        self.layer4_m = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
+        self.avgpool_m = nn.AdaptiveAvgPool3d((1, 1, 1))
+        n = 2
+        self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
         n=1
-        self.fc_contra_scale1 = nn.Sequential (
-            nn.Linear (512 , 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 128),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (128, 5))
-        self.fc_contra_scale2 = nn.Sequential (
-            nn.Linear (1024, 512),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (512, 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 5))
-        self.fc_contra = nn.Sequential(
-            nn.Linear(n * 512 * block.expansion, 1024),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(1024, 500),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(500, 5))
-        self.fc_contra_multi = nn.Sequential(
-            nn.Linear(12345, 1024),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(1024, 500),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(500, 5))
-        # self.fc_dist = nn.Sequential (
-        #     nn.Linear (n * 512 * block.expansion, 512),
-        #     nn.Linear (512, 256))
         # self.fc_contra = nn.Sequential(
-        #     nn.Linear(in_features = 2048, out_features = 1024),
-        #     nn.BatchNorm1d (1024),
-        #     nn.ReLU (inplace=True),
-        #     nn.Linear(1024, 128))
-        #####
-        # self.bilinear = nn.Bilinear(2048, 2048, 256)
+        #     nn.Linear(n * 512 * block.expansion, 1024),
+        #     nn.ReLU(inplace=True),
+        #
+        #     nn.Linear(1024, 500),
+        #     nn.ReLU(inplace=True),
+        #
+        #     nn.Linear(500, 5))
+        self.fc_contra_large_scale = nn.Sequential(
+            nn.Linear(n * 512 * block.expansion, 500),
+            nn.ReLU(inplace=True),
+
+            nn.Linear(500, 5))
+
+        self.fc_contra_small_scale = nn.Sequential (
+            nn.Linear (n * 512 * block.expansion, 500),
+            nn.ReLU (inplace=True),
+
+            nn.Linear (500, 5))
+
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
         # self.extract = ConvBlock(3,3)
@@ -528,63 +505,6 @@ class resnet3d(nn.Module):
         # print("before fc", x.size())
         x = self.fc(x)
         x = self.sigmoid(x)
-        return x
-
-    def forward_single_mscale_single(self, x):
-        print("msscale single light")
-        x_d, x_l, fullx_d, fullx_l = x
-        # x_d = self.conv1(x_d)
-        # x_d = self.bn1(x_d)
-        # x_d = self.relu(x_d)
-        # x_d = self.maxpool1(x_d)
-        # x_d = self.layer1(x_d)
-        # x_d = self.maxpool2(x_d)
-        # x_d = self.layer2(x_d)
-        # x_d = self.layer3(x_d)
-
-        x_l = self.conv1(x_l)
-        x_l = self.bn1(x_l)
-        x_l = self.relu(x_l)
-        x_l = self.maxpool1(x_l)
-        x_l = self.layer1(x_l)
-        x_l = self.maxpool2(x_l)
-        x_l = self.layer2(x_l)
-        x_l = self.layer3(x_l)
-        # x = torch.cat((x_l, x_d), dim=1)
-        # x = self.conv11(x)
-        # print("xsize layer3", x_l.size())
-        x_l = self.layer4(x_l)
-        # fullx_d = self.conv1_m(fullx_d)
-        # fullx_d = self.bn1_m(fullx_d)
-        # fullx_d = self.relu_m(fullx_d)
-        # fullx_d = self.maxpool1_m(fullx_d)
-        # fullx_d = self.layer1_m(fullx_d)
-        # fullx_d = self.maxpool2_m(fullx_d)
-        # fullx_d = self.layer2_m(fullx_d)
-        # fullx_d = self.layer3_m(fullx_d)
-
-        fullx_l = self.conv1_m(fullx_l)
-        fullx_l = self.bn1_m(fullx_l)
-        fullx_l = self.relu_m(fullx_l)
-        fullx_l = self.maxpool1_m(fullx_l)
-        fullx_l = self.layer1_m(fullx_l)
-        fullx_l = self.maxpool2_m(fullx_l)
-        fullx_l = self.layer2_m(fullx_l)
-        fullx_l = self.layer3_m(fullx_l)
-        #
-        # fullx = torch.cat((fullx_l, fullx_d), dim=1)
-        # fullx = self.conv11_m(fullx)
-        fullx_l = self.layer4_m(fullx_l)
-
-        x = torch.cat((fullx_l, x_l), dim=1)
-        x = self.conv11_final(x)
-        x = self.avgpool(x)
-        x = self.drop(x)
-
-        x = x.view(x.shape[0], -1)
-        x = self.fc(x)
-        x = self.sigmoid(x)
-
         return x
 
 
@@ -834,7 +754,75 @@ class resnet3d(nn.Module):
         h_l = h_l
         return h_d, h_l, x
 
+    def forward_smallscale(self, x):
+        x = self.conv1 (x)
+        x = self.bn1 (x)
+        x = self.relu (x)
+        x = self.maxpool1 (x)
 
+        x = self.layer1 (x)
+        x = self.maxpool2 (x)
+        x = self.layer2 (x)
+        x = self.layer3 (x)
+        x = self.layer4 (x)
+
+        x = self.avgpool (x)
+        h = x
+        h = h.view (h.size (0), -1)
+        h = self.fc_contra_small_scale (h)
+        h = F.normalize (h, dim=1)
+        # x = self.drop (x)
+        #
+        # x = x.view (x.shape[0], -1)
+        #
+        # x = self.fc (x)
+        # x = self.sigmoid (x)
+        return h, x
+
+    def forward_largescle(self, fullx):
+        fullx = self.conv1_m (fullx)
+        fullx = self.bn1_m (fullx)
+        fullx = self.relu_m (fullx)
+        fullx = self.maxpool1_m (fullx)
+        fullx = self.layer1_m (fullx)
+        fullx = self.maxpool2_m (fullx)
+        fullx = self.layer2_m (fullx)
+        fullx = self.layer3_m (fullx)
+        fullx = self.layer4_m (fullx)
+        fullx = self.avgpool (fullx)
+        h = fullx
+        h = h.view (h.size (0), -1)
+        h = self.fc_contra_large_scale (h)
+        h = F.normalize (h, dim=1)
+
+        # fullx = self.drop (fullx)
+        # fullx = fullx.view (fullx.shape[0], -1)
+        # fullx = self.fc (fullx)
+        # fullx = self.sigmoid (fullx)
+        return h, fullx
+
+    def forward_single_mscale_single(self, x):
+        x_d, x_l, fullx_d, fullx_l = x
+        h_full_d, x_full_d = self.forward_largescle (fullx_d)
+        h_full_l, x_full_l = self.forward_largescle (fullx_l)
+        h_d, x_d = self.forward_smallscale (x_d)
+        h_l, x_l = self.forward_smallscale (x_l)
+        full_x = torch.cat((x_full_d, x_full_l),dim=1)
+        full_x = self.drop (full_x)
+        full_x = full_x.view (full_x.shape[0], -1)
+        # print(full_x.size())
+        full_x = self.fc_m (full_x)
+        full_x = self.sigmoid (full_x)
+        x = torch.cat ((x_d, x_l), dim=1)
+        x = self.drop (x)
+
+        x = x.view (x.shape[0], -1)
+
+        x = self.fc (x)
+        x = self.sigmoid (x)
+        x = (x+full_x)/2
+
+        return {"h_full_d": h_full_d, "h_full_l": h_full_l, "h_d": h_d, "h_l": h_l,"x": x}
 
     def contra_module(self, x, flag):
         h = x
@@ -1022,14 +1010,10 @@ class resnet3d(nn.Module):
         x_l = batch[1]
         fullx_d = batch[2]
         fullx_l = batch[3]
-        x = (x_d, x_l)
+        # x = (x_d, x_l)
         ms_x = (x_d, x_l, fullx_d, fullx_l)
-        batch = {'frames': x, 'frames1': ms_x} ##0 dark 1 light
+        batch = {'frames1': ms_x} ##0 dark 1 light
         # 5D tensor == single clip
-        if not opt.multiway_contra and (opt.contra == True or opt.contra_focal == True):
-            # pred = self.forward_single(batch['frames'][0])
-            pred = self.forward_single_contra(batch["frames"])
-            # pred = self.forward_dist_contra(batch["frames"])
         if opt.multiway_contra == True:
             pred = self.forward_multiway_contra (batch['frames'])
         if opt.contra_focal_bilinear ==True:
@@ -1051,24 +1035,12 @@ class resnet3d(nn.Module):
             # if batch['frames'].dim() == 5:
             # print("catmodel")
             pred = self.forward_single_cat(batch['frames'])
-        # if opt.cat == False:
-        #     if opt.attention ==True:
-        #         print("attention")
-        #         pred = self.attention_forward_single(batch['frames'])
-        #     else:
-        #         print("light")
-        #         pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
 
-        # 7D tensor == 3 crops/10 clips
-        # elif batch['frames'].dim() == 7:
-        #     pred = self.forward_multi(batch['frames'])
+        if opt.contra_multiscale and opt.contra_focal:
+            # print("multiscal_contra")
+            pred = self.forward_single_mscale_single(batch['frames1'])
 
-        loss_dict = {}
-        # if 'label' in batch:
-        #     loss = F.cross_entropy(pred, batch['label'], reduction='none')
-        #     loss_dict = {'loss': loss}
-
-        return pred#, loss_dict
+        return pred
 
 def i3_res50_nl(num_classes):
     net = resnet3d(num_classes=num_classes, use_nl=True)
