@@ -424,22 +424,22 @@ class resnet3d(nn.Module):
         # n = 1
         # self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
         n=1
-        self.fc_contra_scale1 = nn.Sequential (
-            nn.Linear (512 , 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 128),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (128, 5))
-        self.fc_contra_scale2 = nn.Sequential (
-            nn.Linear (1024, 512),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (512, 256),
-            nn.ReLU (inplace=True),
-
-            nn.Linear (256, 5))
+        # self.fc_contra_scale1 = nn.Sequential (
+        #     nn.Linear (512 , 256),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (256, 128),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (128, 5))
+        # self.fc_contra_scale2 = nn.Sequential (
+        #     nn.Linear (1024, 512),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (512, 256),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (256, 5))
         self.fc_contra = nn.Sequential(
             nn.Linear(n * 512 * block.expansion, 1024),
             nn.ReLU(inplace=True),
@@ -448,8 +448,16 @@ class resnet3d(nn.Module):
             nn.ReLU(inplace=True),
 
             nn.Linear(500, 5))
-        self.fc_contra_multi = nn.Sequential(
-            nn.Linear(12345, 1024),
+        # self.fc_contra_multi = nn.Sequential(
+        #     nn.Linear(12345, 1024),
+        #     nn.ReLU(inplace=True),
+        #
+        #     nn.Linear(1024, 500),
+        #     nn.ReLU(inplace=True),
+        #
+        #     nn.Linear(500, 5))
+        self.fc_contra_large_scale = nn.Sequential(
+            nn.Linear(2048, 1024),
             nn.ReLU(inplace=True),
 
             nn.Linear(1024, 500),
@@ -507,8 +515,8 @@ class resnet3d(nn.Module):
 
         return output
 
-    def forward_single(self, x):
-        # print("single, dark")
+    def forward_smallscale(self, x):
+        print("single, dark")
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -521,63 +529,57 @@ class resnet3d(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        # print("after avgpool",x.size())
+        h = x
+        h = h.view (h.size (0), -1)
+        h = self.fc_contra_large_scale (h)
+        h = F.normalize (h, dim=1)
         x = self.drop(x)
 
         x = x.view(x.shape[0], -1)
-        # print("before fc", x.size())
+
         x = self.fc(x)
         x = self.sigmoid(x)
-        return x
+        return h, x
+    def forward_largescle(self, fullx):
+        fullx = self.conv1_m (fullx)
+        fullx = self.bn1_m (fullx)
+        fullx = self.relu_m (fullx)
+        fullx = self.maxpool1_m (fullx)
+        fullx = self.layer1_m (fullx)
+        fullx = self.maxpool2_m (fullx)
+        fullx = self.layer2_m (fullx)
+        fullx = self.layer3_m (fullx)
+        fullx = self.layer4_m (fullx)
+        fullx = self.avgpool (fullx)
+        h = fullx
+        h = h.view (h.size (0), -1)
+        h = self.fc_contra_large_scale(h)
+        h = F.normalize(h, dim=1)
+
+        fullx = self.drop (fullx)
+        fullx = fullx.view (fullx.shape[0], -1)
+        fullx = self.fc (fullx)
+        fullx = self.sigmoid (fullx)
+        return h, fullx
 
     def forward_single_mscale_single(self, x):
-        print("msscale single light")
         x_d, x_l, fullx_d, fullx_l = x
-        # x_d = self.conv1(x_d)
-        # x_d = self.bn1(x_d)
-        # x_d = self.relu(x_d)
-        # x_d = self.maxpool1(x_d)
-        # x_d = self.layer1(x_d)
-        # x_d = self.maxpool2(x_d)
-        # x_d = self.layer2(x_d)
-        # x_d = self.layer3(x_d)
+        h_full_d, x_full_d = self.forward_largescle(fullx_d)
+        h_full_l, x_full_l = self.forward_largescle (fullx_l)
+        h_d, x_d = self.forward_smallscale(x_d)
+        h_l, x_l = self.forward_smallscale (x_l)
+        return {"h_full_d":h_full_d, "h_full_l":h_full_l, "h_d":h_d, "h_l":h_l, "x_full_d":x_full_d, "x_full_l":x_full_l, "x_d":x_d, "x_l":x_l}
 
-        x_l = self.conv1(x_l)
-        x_l = self.bn1(x_l)
-        x_l = self.relu(x_l)
-        x_l = self.maxpool1(x_l)
-        x_l = self.layer1(x_l)
-        x_l = self.maxpool2(x_l)
-        x_l = self.layer2(x_l)
-        x_l = self.layer3(x_l)
-        # x = torch.cat((x_l, x_d), dim=1)
-        # x = self.conv11(x)
-        # print("xsize layer3", x_l.size())
-        x_l = self.layer4(x_l)
-        # fullx_d = self.conv1_m(fullx_d)
-        # fullx_d = self.bn1_m(fullx_d)
-        # fullx_d = self.relu_m(fullx_d)
-        # fullx_d = self.maxpool1_m(fullx_d)
-        # fullx_d = self.layer1_m(fullx_d)
-        # fullx_d = self.maxpool2_m(fullx_d)
-        # fullx_d = self.layer2_m(fullx_d)
-        # fullx_d = self.layer3_m(fullx_d)
-
-        fullx_l = self.conv1_m(fullx_l)
-        fullx_l = self.bn1_m(fullx_l)
-        fullx_l = self.relu_m(fullx_l)
-        fullx_l = self.maxpool1_m(fullx_l)
-        fullx_l = self.layer1_m(fullx_l)
-        fullx_l = self.maxpool2_m(fullx_l)
-        fullx_l = self.layer2_m(fullx_l)
-        fullx_l = self.layer3_m(fullx_l)
-        #
-        # fullx = torch.cat((fullx_l, fullx_d), dim=1)
-        # fullx = self.conv11_m(fullx)
-        fullx_l = self.layer4_m(fullx_l)
-
-        x = torch.cat((fullx_l, x_l), dim=1)
-        x = self.conv11_final(x)
+    def forward_single_mscale(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool1(x)
+        x = self.layer1(x)
+        x = self.maxpool2(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4 (x)
         x = self.avgpool(x)
         x = self.drop(x)
 
@@ -586,7 +588,6 @@ class resnet3d(nn.Module):
         x = self.sigmoid(x)
 
         return x
-
 
     def forward_single_mscale(self, x):
         x_d, x_l, fullx_d, fullx_l = x
@@ -1038,26 +1039,14 @@ class resnet3d(nn.Module):
             # pred = self.forward_single_contra(batch['frames'])
             # print("batchsize",batch['frames'][0].size())
             pred = self.forward_single(batch['frames'][0]) ##0 dark 1 light
-        if opt.contra_learning == True:
-            pred = self.forward_single_contra_learning(batch['frames'])
-        if opt.contra_learning_2 == True:
-            print("contra_learning")
-            pred = self.forward_contra_learning_2(batch['frames'])
         if opt.mscale == True:
             # print("multiscale cat")
             pred = self.forward_single_mscale_single(batch['frames1'])
             # pred = self.forward_single_mscale(batch['frames1'])
         if opt.cat == True:
-            # if batch['frames'].dim() == 5:
-            # print("catmodel")
             pred = self.forward_single_cat(batch['frames'])
-        # if opt.cat == False:
-        #     if opt.attention ==True:
-        #         print("attention")
-        #         pred = self.attention_forward_single(batch['frames'])
-        #     else:
-        #         print("light")
-        #         pred = self.forward_single(batch['frames'][1])###0 denotes dark 1 denotes light
+        if opt.multiscale and opt.contra_focal:
+            pred= self.forward_single_mscale_single(batch["frames1"])
 
         # 7D tensor == 3 crops/10 clips
         # elif batch['frames'].dim() == 7:
@@ -1076,6 +1065,716 @@ def i3_res50_nl(num_classes):
     # net.load_state_dict(state_dict)
     # freeze_bn(net, "net") # Only needed for finetuning. For validation, .eval() works.
     return net
+
+
+class S3D (nn.Module):
+    def __init__(self, num_class):
+        print ("init S3D")
+        super (S3D, self).__init__ ()
+        self.sigmoid = nn.Sigmoid ()
+        self.base = nn.Sequential (
+            SepConv3d (3, 64, kernel_size=7, stride=2, padding=3),
+            nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+            BasicConv3d (64, 64, kernel_size=1, stride=1),
+            SepConv3d (64, 192, kernel_size=3, stride=1, padding=1),
+            nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+            Mixed_3b (),
+            Mixed_3c (),
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+            Mixed_4b (),
+            Mixed_4c (),
+            Mixed_4d (),
+            Mixed_4e (),
+            Mixed_4f (),
+            nn.MaxPool3d (kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=(0, 0, 0)),
+            Mixed_5b (),
+            Mixed_5c (),
+        )
+        n = 2048
+        self.fc_contra = nn.Sequential (
+            nn.Linear (n, 500),
+            nn.ReLU (inplace=True),
+
+            nn.Linear (500, 500),
+            nn.ReLU (inplace=True),
+
+            nn.Linear (500, 5))
+        self.fc = nn.Sequential (nn.Conv3d (1024, num_class, kernel_size=1, stride=1, bias=True), )
+        self.fc_2 = nn.Sequential (nn.Conv3d (2048, num_class, kernel_size=1, stride=1, bias=True), )
+    def forward_single(self, x):
+        y = self.base (x)
+        print("xsize",y.size())
+        y = F.avg_pool3d (y, (2, y.size (3), y.size (4)), stride=1)
+        print ("xsize", y.size ())
+        y = self.fc (y)
+        print("899", y.size())
+        y = y.view (y.size (0), y.size (1), y.size (2))
+        print("901", y.size(), y)
+        logits = torch.mean (y, 2)
+
+        logits = self.sigmoid (logits)
+        print("903", logits.size())
+        return logits
+    def forward(self, x): ##forward contra
+        x_d,x_l = x[0],x[1]
+        y_d = self.base (x_d)
+        y_d = F.avg_pool3d (y_d, (2, y_d.size (3), y_d.size (4)), stride=1)
+        h_d = self.fc_contra(y_d.view(y_d.size(0),-1))
+        y_l = self.base (x_l)
+        y_l = F.avg_pool3d (y_l, (2, y_l.size (3), y_l.size (4)), stride=1)
+        h_l = self.fc_contra (y_l.view (y_l.size (0), -1))
+
+        y = torch.cat((y_d, y_l),dim=1)
+
+        y = self.fc_2 (y)
+
+        y = y.view (y.size (0), y.size (1), y.size (2))
+
+        logits = torch.mean (y, 2)
+
+        logits = self.sigmoid (logits)
+
+        return h_d, h_l, logits
+
+class BasicConv3d (nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
+        super (BasicConv3d, self).__init__ ()
+        self.conv = nn.Conv3d (in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=padding,
+                               bias=False)
+        self.bn = nn.BatchNorm3d (out_planes, eps=1e-3, momentum=0.001, affine=True)
+        self.relu = nn.ReLU ()
+
+    def forward(self, x):
+        x = self.conv (x)
+        x = self.bn (x)
+        x = self.relu (x)
+        return x
+
+
+class SepConv3d (nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
+        super (SepConv3d, self).__init__ ()
+        self.conv_s = nn.Conv3d (in_planes, out_planes, kernel_size=(1, kernel_size, kernel_size),
+                                 stride=(1, stride, stride), padding=(0, padding, padding), bias=False)
+        self.bn_s = nn.BatchNorm3d (out_planes, eps=1e-3, momentum=0.001, affine=True)
+        self.relu_s = nn.ReLU ()
+
+        self.conv_t = nn.Conv3d (out_planes, out_planes, kernel_size=(kernel_size, 1, 1), stride=(stride, 1, 1),
+                                 padding=(padding, 0, 0), bias=False)
+        self.bn_t = nn.BatchNorm3d (out_planes, eps=1e-3, momentum=0.001, affine=True)
+        self.relu_t = nn.ReLU ()
+
+    def forward(self, x):
+        x = self.conv_s (x)
+        x = self.bn_s (x)
+        x = self.relu_s (x)
+
+        x = self.conv_t (x)
+        x = self.bn_t (x)
+        x = self.relu_t (x)
+        return x
+
+
+class Mixed_3b (nn.Module):
+    def __init__(self):
+        super (Mixed_3b, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (192, 64, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (192, 96, kernel_size=1, stride=1),
+            SepConv3d (96, 128, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (192, 16, kernel_size=1, stride=1),
+            SepConv3d (16, 32, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (192, 32, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+
+        return out
+
+
+class Mixed_3c (nn.Module):
+    def __init__(self):
+        super (Mixed_3c, self).__init__ ()
+        self.branch0 = nn.Sequential (
+            BasicConv3d (256, 128, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (256, 128, kernel_size=1, stride=1),
+            SepConv3d (128, 192, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (256, 32, kernel_size=1, stride=1),
+            SepConv3d (32, 96, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (256, 64, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_4b (nn.Module):
+    def __init__(self):
+        super (Mixed_4b, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (480, 192, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (480, 96, kernel_size=1, stride=1),
+            SepConv3d (96, 208, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (480, 16, kernel_size=1, stride=1),
+            SepConv3d (16, 48, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (480, 64, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_4c (nn.Module):
+    def __init__(self):
+        super (Mixed_4c, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (512, 160, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (512, 112, kernel_size=1, stride=1),
+            SepConv3d (112, 224, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (512, 24, kernel_size=1, stride=1),
+            SepConv3d (24, 64, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (512, 64, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_4d (nn.Module):
+    def __init__(self):
+        super (Mixed_4d, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (512, 128, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (512, 128, kernel_size=1, stride=1),
+            SepConv3d (128, 256, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (512, 24, kernel_size=1, stride=1),
+            SepConv3d (24, 64, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (512, 64, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_4e (nn.Module):
+    def __init__(self):
+        super (Mixed_4e, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (512, 112, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (512, 144, kernel_size=1, stride=1),
+            SepConv3d (144, 288, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (512, 32, kernel_size=1, stride=1),
+            SepConv3d (32, 64, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (512, 64, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_4f (nn.Module):
+    def __init__(self):
+        super (Mixed_4f, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (528, 256, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (528, 160, kernel_size=1, stride=1),
+            SepConv3d (160, 320, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (528, 32, kernel_size=1, stride=1),
+            SepConv3d (32, 128, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (528, 128, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_5b (nn.Module):
+    def __init__(self):
+        super (Mixed_5b, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (832, 256, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (832, 160, kernel_size=1, stride=1),
+            SepConv3d (160, 320, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (832, 32, kernel_size=1, stride=1),
+            SepConv3d (32, 128, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (832, 128, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class Mixed_5c (nn.Module):
+    def __init__(self):
+        super (Mixed_5c, self).__init__ ()
+
+        self.branch0 = nn.Sequential (
+            BasicConv3d (832, 384, kernel_size=1, stride=1),
+        )
+        self.branch1 = nn.Sequential (
+            BasicConv3d (832, 192, kernel_size=1, stride=1),
+            SepConv3d (192, 384, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch2 = nn.Sequential (
+            BasicConv3d (832, 48, kernel_size=1, stride=1),
+            SepConv3d (48, 128, kernel_size=3, stride=1, padding=1),
+        )
+        self.branch3 = nn.Sequential (
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=1, padding=1),
+            BasicConv3d (832, 128, kernel_size=1, stride=1),
+        )
+
+    def forward(self, x):
+        x0 = self.branch0 (x)
+        x1 = self.branch1 (x)
+        x2 = self.branch2 (x)
+        x3 = self.branch3 (x)
+        out = torch.cat ((x0, x1, x2, x3), 1)
+        return out
+
+
+class InceptionI3d (nn.Module):
+    """Inception-v1 I3D architecture.
+    The model is introduced in:
+        Quo Vadis, Action Recognition? A New Model and the Kinetics Dataset
+        Joao Carreira, Andrew Zisserman
+        https://arxiv.org/pdf/1705.07750v1.pdf.
+    See also the Inception architecture, introduced in:
+        Going deeper with convolutions
+        Christian Szegedy, Wei Liu, Yangqing Jia, Pierre Sermanet, Scott Reed,
+        Dragomir Anguelov, Dumitru Erhan, Vincent Vanhoucke, Andrew Rabinovich.
+        http://arxiv.org/pdf/1409.4842v1.pdf.
+    """
+
+    # Endpoints of the model in order. During construction, all the endpoints up
+    # to a designated `final_endpoint` are returned in a dictionary as the
+    # second return value.
+    VALID_ENDPOINTS = (
+        'Conv3d_1a_7x7',
+        'MaxPool3d_2a_3x3',
+        'Conv3d_2b_1x1',
+        'Conv3d_2c_3x3',
+        'MaxPool3d_3a_3x3',
+        'Mixed_3b',
+        'Mixed_3c',
+        'MaxPool3d_4a_3x3',
+        'Mixed_4b',
+        'Mixed_4c',
+        'Mixed_4d',
+        'Mixed_4e',
+        'Mixed_4f',
+        'MaxPool3d_5a_2x2',
+        'Mixed_5b',
+        'Mixed_5c',
+        'Logits',
+        'Predictions',
+    )
+
+    def __init__(self, num_classes=400, spatial_squeeze=True,
+                 final_endpoint='Logits', name='inception_i3d', in_channels=3, dropout_keep_prob=0.5):
+        """Initializes I3D model instance.
+        Args:
+          num_classes: The number of outputs in the logit layer (default 400, which
+              matches the Kinetics dataset).
+          spatial_squeeze: Whether to squeeze the spatial dimensions for the logits
+              before returning (default True).
+          final_endpoint: The model contains many possible endpoints.
+              `final_endpoint` specifies the last endpoint for the model to be built
+              up to. In addition to the output at `final_endpoint`, all the outputs
+              at endpoints up to `final_endpoint` will also be returned, in a
+              dictionary. `final_endpoint` must be one of
+              InceptionI3d.VALID_ENDPOINTS (default 'Logits').
+          name: A string (optional). The name of this module.
+        Raises:
+          ValueError: if `final_endpoint` is not recognized.
+        """
+
+        if final_endpoint not in self.VALID_ENDPOINTS:
+            raise ValueError ('Unknown final endpoint %s' % final_endpoint)
+
+        super (InceptionI3d, self).__init__ ()
+        self._num_classes = num_classes
+        self._spatial_squeeze = spatial_squeeze
+        self._final_endpoint = final_endpoint
+        self.logits = None
+
+        if self._final_endpoint not in self.VALID_ENDPOINTS:
+            raise ValueError ('Unknown final endpoint %s' % self._final_endpoint)
+
+        self.end_points = {}
+        end_point = 'Conv3d_1a_7x7'
+        self.end_points[end_point] = Unit3D (in_channels=in_channels, output_channels=64, kernel_shape=[7, 7, 7],
+                                             stride=(2, 2, 2), padding=(3, 3, 3), name=name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'MaxPool3d_2a_3x3'
+        self.end_points[end_point] = MaxPool3dSamePadding (kernel_size=[1, 3, 3], stride=(1, 2, 2),
+                                                           padding=0)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Conv3d_2b_1x1'
+        self.end_points[end_point] = Unit3D (in_channels=64, output_channels=64, kernel_shape=[1, 1, 1], padding=0,
+                                             name=name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Conv3d_2c_3x3'
+        self.end_points[end_point] = Unit3D (in_channels=64, output_channels=192, kernel_shape=[3, 3, 3], padding=1,
+                                             name=name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'MaxPool3d_3a_3x3'
+        self.end_points[end_point] = MaxPool3dSamePadding (kernel_size=[1, 3, 3], stride=(1, 2, 2),
+                                                           padding=0)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_3b'
+        self.end_points[end_point] = InceptionModule (192, [64, 96, 128, 16, 32, 32], name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_3c'
+        self.end_points[end_point] = InceptionModule (256, [128, 128, 192, 32, 96, 64], name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'MaxPool3d_4a_3x3'
+        self.end_points[end_point] = MaxPool3dSamePadding (kernel_size=[3, 3, 3], stride=(2, 2, 2),
+                                                           padding=0)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_4b'
+        self.end_points[end_point] = InceptionModule (128 + 192 + 96 + 64, [192, 96, 208, 16, 48, 64], name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_4c'
+        self.end_points[end_point] = InceptionModule (192 + 208 + 48 + 64, [160, 112, 224, 24, 64, 64],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_4d'
+        self.end_points[end_point] = InceptionModule (160 + 224 + 64 + 64, [128, 128, 256, 24, 64, 64],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_4e'
+        self.end_points[end_point] = InceptionModule (128 + 256 + 64 + 64, [112, 144, 288, 32, 64, 64],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_4f'
+        self.end_points[end_point] = InceptionModule (112 + 288 + 64 + 64, [256, 160, 320, 32, 128, 128],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'MaxPool3d_5a_2x2'
+        self.end_points[end_point] = MaxPool3dSamePadding (kernel_size=[2, 2, 2], stride=(2, 2, 2),
+                                                           padding=0)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_5b'
+        self.end_points[end_point] = InceptionModule (256 + 320 + 128 + 128, [256, 160, 320, 32, 128, 128],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Mixed_5c'
+        self.end_points[end_point] = InceptionModule (256 + 320 + 128 + 128, [384, 192, 384, 48, 128, 128],
+                                                      name + end_point)
+        if self._final_endpoint == end_point: return
+
+        end_point = 'Logits'
+        self.avg_pool = nn.AvgPool3d (kernel_size=[2, 7, 7],
+                                      stride=(1, 1, 1))
+        self.dropout = nn.Dropout (dropout_keep_prob)
+        self.logits = Unit3D (in_channels=384 + 384 + 128 + 128, output_channels=self._num_classes,
+                              kernel_shape=[1, 1, 1],
+                              padding=0,
+                              activation_fn=None,
+                              use_batch_norm=False,
+                              use_bias=True,
+                              name='logits')
+        self.sigmoid = nn.Sigmoid ()
+        n = 2048
+        self.conv11 = nn.Conv3d (2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        self.fc_contra = nn.Sequential (
+            nn.Linear (n, 500),
+            nn.ReLU (inplace=True),
+
+            nn.Linear (500, 500),
+            nn.ReLU (inplace=True),
+
+            nn.Linear (500, 5))
+
+
+
+    def replace_logits(self, num_classes):
+        self._num_classes = num_classes
+        self.logits = Unit3D (in_channels=384 + 384 + 128 + 128, output_channels=self._num_classes,
+                              kernel_shape=[1, 1, 1],
+                              padding=0,
+                              activation_fn=None,
+                              use_batch_norm=False,
+                              use_bias=True,
+                              name='logits')
+
+    def build(self):
+        for k in self.end_points.keys ():
+            self.add_module (k, self.end_points[k])
+
+    def forward_single(self, x):
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x = self._modules[end_point] (x)  # use _modules to work with dataparallel
+        ##add contrastive model
+
+        x = self.logits (self.dropout (self.avg_pool (x)))
+        if self._spatial_squeeze:
+            logits = x.squeeze (3).squeeze (3)
+        # logits is batch X time X classes, which is what we want to work with
+        t = logits.size (2)
+        per_frame_logits = F.upsample (logits, t, mode='linear')
+        # print(per_frame_logits.size())
+        average_logits = torch.mean (per_frame_logits, 2)
+        average_logits = self.sigmoid (average_logits)
+        # print("average_size",average_logits.size())
+        return average_logits
+
+
+    def forward_contra(self, x):
+        x_d, x_l = x[0], x[1]
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x_l = self._modules[end_point] (x_l)
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x_d = self._modules[end_point] (x_d)  # use _modules to work with dataparallel
+        ##
+
+        ##add contrastive model
+        # print (x_d.size ())
+        x_d = self.avg_pool (x_d)
+        x_l = self.avg_pool (x_l)
+        h_d, h_l = x_d, x_l
+        x_d,x_l = self.dropout (x_d), self.dropout(x_l)
+        # print(h_d.size())
+        h_d = h_d.view (h_d.size (0), -1)
+        h_d = self.fc_contra (h_d)
+        h_d = F.normalize (h_d, dim=1)
+        h_l = h_l.view (h_l.size (0), -1)
+        h_l = self.fc_contra (h_l)
+        h_l = F.normalize (h_l, dim=1)
+        x = torch.cat ((x_l, x_d), dim=1)
+        x = self.conv11 (x)
+        x = self.logits (x)
+
+        if self._spatial_squeeze:
+            logits = x.squeeze (3).squeeze (3)
+        # logits is batch X time X classes, which is what we want to work with
+        t = logits.size (2)
+        per_frame_logits = F.upsample (logits, t, mode='linear')
+        average_logits = torch.mean (per_frame_logits, 2)
+        average_logits = self.sigmoid (average_logits)
+
+        h_d = 10*h_d
+        h_l = 10*h_l
+        return h_d, h_l, average_logits
+
+    def forward_contra_v1(self, x):
+        x_d, x_l = x[0], x[1]
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x_l = self._modules[end_point] (x_l)
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x_d = self._modules[end_point] (x_d)  # use _modules to work with dataparallel
+        ##
+
+        ##add contrastive model
+        print (x_d.size ())
+        x_d = self.dropout (self.avg_pool (x_d))
+        x_l = self.dropout (self.avg_pool (x_l))
+        h_d, h_l = x_d, x_l
+        print (h_d.size ())
+        h_d = h_d.view (h_d.size (0), -1)
+        h_d = self.fc_contra (h_d)
+        h_d = F.normalize (h_d, dim=1)
+        h_l = h_l.view (h_l.size (0), -1)
+        h_l = self.fc_contra (h_l)
+        h_l = F.normalize (h_l, dim=1)
+
+        x = torch.cat ((x_l, x_d), dim=1)
+        x = self.conv11 (x)
+        x = self.logits (x)
+
+        if self._spatial_squeeze:
+            logits = x.squeeze (3).squeeze (3)
+        # logits is batch X time X classes, which is what we want to work with
+        t = logits.size (2)
+        per_frame_logits = F.upsample (logits, t, mode='linear')
+        average_logits = torch.mean (per_frame_logits, 2)
+        average_logits = self.sigmoid (average_logits)
+
+        return h_d, h_l, average_logits
+
+    def forward(self, x):
+        if opt.contra_focal == True:
+            return self.forward_contra (x)
+        elif opt.contra_single == True:
+            # if opt.typedata == "light":  ##0 dark 1 light
+            #     x = x[1]
+            # elif opt.typedata == "dark":
+            #     x = x[0]
+            return self.forward_single (x)
+
+    def extract_features(self, x):
+        for end_point in self.VALID_ENDPOINTS:
+            if end_point in self.end_points:
+                x = self._modules[end_point] (x)
+        return self.avg_pool (x)
+
+
+class ConvBlock(nn.Module):  ###结构提取代码
+    def __init__(self, n_in=64, n_out=3):
+        super(ConvBlock, self).__init__()
+
+        self.cov_block = nn.Sequential(
+            nn.Conv2d(in_channels=n_in, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.LeakyReLU(0.2, inplace=True),
+            # nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=1, bias=False),
+            # nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(in_channels=64, out_channels=n_out, kernel_size=3, stride=1, padding=1, bias=False),
+        )
+
+    def forward(self, x):
+        # output = []
+        # for i in range(x.size(0)):
+        #     C,N,H,W = x[i,...].size()
+        #     res = self.cov_block(x[i, ...].view(N, C, H, W))
+        #     output.append(res)
+        # return torch.stack(output)
+        res = self.cov_block(x)
+
+        return res
+
+
 
 class FastGuidedFilter_attention(nn.Module):
     def __init__(self, r, eps=1e-8):
@@ -2038,7 +2737,6 @@ class InceptionI3d (nn.Module):
             self.add_module (k, self.end_points[k])
 
     def forward_single(self, x):
-        print("i3d",x.size())
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
                 x = self._modules[end_point] (x)  # use _modules to work with dataparallel
@@ -2103,23 +2801,17 @@ class InceptionI3d (nn.Module):
         ##
 
         ##add contrastive model
-        # print (x_d.size ())
         x_d = self.avg_pool (x_d)
         x_l = self.avg_pool (x_l)
         h_d, h_l = x_d, x_l
-        x_d,x_l = self.dropout (x_d), self.dropout(x_l)
-        # print(h_d.size())
+        x_d, x_l = self.dropout (x_d), self.dropout(x_l)
+
         h_d = h_d.view (h_d.size (0), -1)
         h_d = self.fc_contra (h_d)
         h_d = F.normalize (h_d, dim=1)
         h_l = h_l.view (h_l.size (0), -1)
         h_l = self.fc_contra (h_l)
         h_l = F.normalize (h_l, dim=1)
-        # if opt.mixup:
-        #     lam = np.random.beta(opt.alpha, opt.alpha)
-        #     x = lam*x_l+(1.-lam)*x_l
-        # elif opt.singleinput:
-        #     x = x_l##仅仅使用x_l 的信息
 
         x = torch.cat ((x_l, x_d), dim=1)
         x = self.conv11 (x)
@@ -2133,35 +2825,59 @@ class InceptionI3d (nn.Module):
         average_logits = torch.mean (per_frame_logits, 2)
         average_logits = self.sigmoid (average_logits)
 
-        h_d = 10*h_d
-        h_l = 10*h_l
         return h_d, h_l, average_logits
 
-    def forward_contra_v1(self, x):
-        x_d, x_l = x[0], x[1]
+    # def forward_contra_v1(self, x):
+    #     x_d, x_l = x[0], x[1]
+    #     for end_point in self.VALID_ENDPOINTS:
+    #         if end_point in self.end_points:
+    #             x_l = self._modules[end_point] (x_l)
+    #     for end_point in self.VALID_ENDPOINTS:
+    #         if end_point in self.end_points:
+    #             x_d = self._modules[end_point] (x_d)  # use _modules to work with dataparallel
+    #     ##
+    #
+    #     ##add contrastive model
+    #     print (x_d.size ())
+    #     x_d = self.dropout (self.avg_pool (x_d))
+    #     x_l = self.dropout (self.avg_pool (x_l))
+    #     h_d, h_l = x_d, x_l
+    #     print (h_d.size ())
+    #     h_d = h_d.view (h_d.size (0), -1)
+    #     h_d = self.fc_contra (h_d)
+    #     h_d = F.normalize (h_d, dim=1)
+    #     h_l = h_l.view (h_l.size (0), -1)
+    #     h_l = self.fc_contra (h_l)
+    #     h_l = F.normalize (h_l, dim=1)
+    #
+    #     x = torch.cat ((x_l, x_d), dim=1)
+    #     x = self.conv11 (x)
+    #     x = self.logits (x)
+    #
+    #     if self._spatial_squeeze:
+    #         logits = x.squeeze (3).squeeze (3)
+    #     # logits is batch X time X classes, which is what we want to work with
+    #     t = logits.size (2)
+    #     per_frame_logits = F.upsample (logits, t, mode='linear')
+    #     average_logits = torch.mean (per_frame_logits, 2)
+    #     average_logits = self.sigmoid (average_logits)
+    #
+    #     return h_d, h_l, average_logits
+
+    def forward_contra_seperate(self, x):
         for end_point in self.VALID_ENDPOINTS:
             if end_point in self.end_points:
-                x_l = self._modules[end_point] (x_l)
-        for end_point in self.VALID_ENDPOINTS:
-            if end_point in self.end_points:
-                x_d = self._modules[end_point] (x_d)  # use _modules to work with dataparallel
-        ##
+                x = self._modules[end_point] (x)
 
         ##add contrastive model
-        print (x_d.size ())
-        x_d = self.dropout (self.avg_pool (x_d))
-        x_l = self.dropout (self.avg_pool (x_l))
-        h_d, h_l = x_d, x_l
-        print (h_d.size ())
-        h_d = h_d.view (h_d.size (0), -1)
-        h_d = self.fc_contra (h_d)
-        h_d = F.normalize (h_d, dim=1)
-        h_l = h_l.view (h_l.size (0), -1)
-        h_l = self.fc_contra (h_l)
-        h_l = F.normalize (h_l, dim=1)
+        x = self.avg_pool (x)
+        h=x
+        x = self.dropout (x)
 
-        x = torch.cat ((x_l, x_d), dim=1)
-        x = self.conv11 (x)
+        h = h.view (h.size (0), -1)
+        h = self.fc_contra (h)
+        # h = F.normalize (h, dim=1)
+
         x = self.logits (x)
 
         if self._spatial_squeeze:
@@ -2172,17 +2888,24 @@ class InceptionI3d (nn.Module):
         average_logits = torch.mean (per_frame_logits, 2)
         average_logits = self.sigmoid (average_logits)
 
-        return h_d, h_l, average_logits
+        return h, average_logits
 
     def forward(self, x):
-        if opt.contra_focal == True:
+        if opt.contra_focal == True and opt.seperate == False:
+            # print("?")
             return self.forward_contra (x)
+        if opt.contra_focal == True and opt.seperate == True:
+            print("twoway")
+            x_d, x_l = x[0], x[1]
+            h_d, logits_d = self.forward_contra_seperate (x_d)
+            h_l, logits_l = self.forward_contra_seperate (x_l)
+            logits = (logits_d+logits_l)/2
+            print("logits-d, logits_l, logits-avg", logits_d, logits_l, logits)
+            return h_d, h_l, logits
         elif opt.contra_single == True:
-            # if opt.typedata == "light":  ##0 dark 1 light
-            #     x = x[1]
-            # elif opt.typedata == "dark":
-            #     x = x[0]
-            return self.forward_single (x)
+            print("??")
+            x_d = x[0] ##0 dark 1 light
+            return self.forward_single (x_d)
 
     def extract_features(self, x):
         for end_point in self.VALID_ENDPOINTS:
@@ -2634,8 +3357,8 @@ if __name__ == '__main__':
     x = (xl, xd, fullxd, fullxl)
     # x=(xl,xd)
     model = resnet3d()
-    h, a = model(x)
-    print(a.size(),  h[0].size(), h[1].size())
+    h_d, h_l, a = model(x)
+    # print(a.size(),  h[0].size(), h[1].size())
     # input_shape = (2,3, 21, 244, 244)
     # # model.replace_logits(1)
     #

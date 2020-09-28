@@ -133,11 +133,51 @@ def main(net_opt=None):
     #     pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
     #     mydict.update(pretrained_dict)
     #     model.load_state_dict(mydict)
+    if opt.netType == "I3D":
+        model = InceptionI3d ()
 
+        if opt.resume_I3D:
+            model.replace_logits (1)
+            print ("resume")
+            mydict = model.state_dict ()
+            state_dict = torch.load (
+                "/home/yangyifan/model/synechiae/log_asoct_I3D_18_onevsall_bs8_baseline_contra1_I3D_oversample_alpha0.75_0723/model/checkpoint77.pkl",
+                map_location=torch.device ('cpu'))["model"]
+            # print (state_dict)
+            pretrained_dict = {k: v for k, v in state_dict.items ()}
+            mydict.update (pretrained_dict)
+            model.load_state_dict (mydict)
+        else:
+            print ("loading i3d pretrain model")
+            # model.load_state_dict(torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle"))
+            mydict = model.state_dict ()
+            state_dict = torch.load ("/home/yangyifan/code/multiViewCNN/pretrained/weights/rgb_imagenet.pt",
+                                     map_location=torch.device ('cpu'))
+            pretrained_dict = {k: v for k, v in state_dict.items () if k not in ["fc8.bias", 'fc8.weight']}
+            mydict.update (pretrained_dict)
+            model.load_state_dict (mydict)
+            model.replace_logits (1)
+    if opt.netType == "S3D":
+        model = S3D (opt.numclass)
+        file_weight = "/home/yangyifan/code/multiViewCNN/pretrained/weights/S3D_kinetics400.pt"
+        weight_dict = torch.load (file_weight)
+        model_dict = model.state_dict ()
+        for name, param in weight_dict.items ():
+            if 'module' in name:
+                name = '.'.join (name.split ('.')[1:])
+            if name in model_dict:
+                if param.size () == model_dict[name].size ():
+                    model_dict[name].copy_ (param)
+                else:
+                    print (' size? ' + name, param.size (), model_dict[name].size ())
+            else:
+                print (' name? ' + name)
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
-    # trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
-    trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
+    if opt.contra_single ==True:
+        trainer = Trainer_multiscale(model=model, opt=opt, optimizer=optimizer)
+    if opt.contra_focal:
+        trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
     print ("|===>Create trainer")
 
     if opt.testOnly:

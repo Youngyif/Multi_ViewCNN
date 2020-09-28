@@ -30,8 +30,9 @@ class ContrastiveLoss(torch.nn.Module):
 
 def generate_margin(T, T_max):
     # a = 2*(1-(math.pow(float((T/T_max)),2)))
-    a = 2+ 4* ((math.pow (float ((T / T_max)), 2)))
+    # a = 6- 4* ((math.pow (float ((T / T_max)), 2)))
     # a = 2 * (1 - (math.pow (float ((T / T_max)), 2)))
+    a = 6-4
     return a
 
 

@@ -278,8 +278,7 @@ class L1norm(torch.nn.Module): ##loss_testure
     def _tensor_size(self,t):
         return t.size()[1]*t.size()[2]*t.size()[3]*t.size()[0]
 
-
-class Trainer (object):
+class Trainer_multiscale (object):
     realLabelsarr = []
     predictLabelsarr = []
 
@@ -316,6 +315,178 @@ class Trainer (object):
         for param_group in self.optimzer.param_groups:
             param_group['lr'] = self.lr
 
+    def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
+        # forward and backward and optimize
+        # print("darkinputsize", dark_input_var.size())
+        Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
+        print("pair0size", Pair[0].size())
+        output = self.model (Pair)
+        if labels_var is not None :
+            loss = self.criterion (output, labels_var)
+        else:
+            loss = None
+
+        return output, loss
+
+    def backward(self, loss):
+        self.optimzer.zero_grad ()
+        loss.backward ()
+
+        self.optimzer.step ()
+
+    def train(self, epoch, train_loader):
+        loss_sum = 0
+        iters = len (train_loader)
+        output_list = []
+        label_list = []
+        self.updatelearningrate (epoch)
+
+        self.model.train ()
+
+        start_time = time.time ()
+        end_time = start_time
+
+        for i, (dark_input, light_input, labels, _) in enumerate (train_loader):
+            self.model.train ()
+            start_time = time.time ()
+            data_time = start_time - end_time
+            ####  process image
+            labels = generateTarget (dark_input[0], labels)
+            reduce_labels = labels
+            labels = labels.cuda ()
+            labels_var = Variable(labels)
+
+
+
+            dark_var = Variable(dark_input[0].cuda ())
+            fulldark_var = Variable(dark_input[1].cuda())
+
+            light_var = Variable (light_input[0].cuda ())
+            fulllight_var = Variable(light_input[1].cuda())
+
+            # print("fulllightvar TRAIN", fulllight_var.size())
+            # print("fulldarkvar", fulldark_var.size())
+            # print("lightvar", light_var.size())
+            # print("darkvar", dark_var.size())
+
+            output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
+
+            prediction = output.data.cpu ()
+
+            output_list.append (prediction.numpy ())
+            label_list.append (reduce_labels.cpu ().numpy ())
+
+            self.backward (loss)
+            loss_sum += float (loss.data)
+            # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
+            # You can fix this by writing total_loss += float(loss) instead.
+            end_time = time.time ()
+
+            iter_time = end_time - start_time
+
+            printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                         loss.data, mode="Train")
+        loss_sum /= iters
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
+        print ("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        return auc, loss_sum
+
+    def test(self, epoch, test_loader):
+        loss_sum = 0
+        iters = len (test_loader)
+        output_list = []
+        label_list = []
+        pathlist= []
+        self.model.eval ()
+
+        start_time = time.time ()
+        end_time = start_time
+        for i, (dark_input, light_input, labels, orgpath) in enumerate (test_loader):
+            with torch.no_grad():
+                pathlist.append(orgpath)
+                start_time = time.time ()
+                data_time = start_time - end_time
+
+                labels = generateTarget (dark_input[0], labels)
+                reduce_labels = labels
+                labels = labels.cuda ()
+
+
+
+                labels_var = Variable (labels)
+
+                # dark_input= dark_input[0].cuda ()
+                # fulldark_var =  dark_input[1].cuda ()
+                # light_input=light_input[0].cuda()
+                # fulllight_var = light_input[1].cuda()
+
+
+                fulldark_var = Variable (dark_input[1].cuda ())
+                dark_var = Variable (dark_input[0].cuda ())
+                fulllight_var = Variable (light_input[1].cuda())
+                light_var = Variable (light_input[0].cuda())
+
+                # print("fulllightvar", fulllight_var.size())
+                # print("fulldarkvar", fulldark_var.size())
+                # print("lightvar", light_var.size())
+                # print("darkvar", dark_var.size())
+                output, loss = self.forward (dark_var, light_var, fulldark_var, fulllight_var, labels_var)
+                loss_sum += float(loss.data)/iters
+                prediction = output.data.cpu ()
+                output_list.append (prediction.numpy ())
+                label_list.append (reduce_labels.cpu ().numpy ())
+                end_time = time.time ()
+                iter_time = end_time - start_time
+
+                printresult (epoch, self.opt.nEpochs, i + 1, iters, self.lr, data_time, iter_time,
+                             # loss.data[0], mode="Test")
+                             loss.data, mode="Test")
+
+        # loss_sum /= iters
+        auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
+        acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval (output_list, label_list, pathlist)
+        print ("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
+        auc, loss_sum, acc, precision, recall, f1, gmean))
+        return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
+
+class Trainer (object):
+    realLabelsarr = []
+    predictLabelsarr = []
+
+    def __init__(self, model, opt, optimizer=None):
+        self.opt = opt
+        self.model = model
+        # print (model)
+        if self.opt.trainingType == 'onevsall':
+            self.criterion = nn.BCELoss ().cuda ()
+        else:
+            self.criterion = nn.CrossEntropyLoss ().cuda ()
+        self.criterion_focal = FocalLoss(alpha=0.75, gamma=2)
+        self.lr = self.opt.LR
+        # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
+        #                                              lr=self.lr,
+        #                                              eps=1,
+        #                                              momentum=self.opt.momentum,
+        #                                              weight_decay=self.opt.weightDecay)
+        self.optimzer = optimizer or torch.optim.SGD (self.model.parameters (),
+                                                      lr=self.lr,
+                                                      momentum=self.opt.momentum,
+                                                      weight_decay=self.opt.weightDecay,
+                                                      nesterov=True)
+
+    def updateopts(self):
+        self.optimzer = torch.optim.SGD (self.model.parameters (),
+                                         lr=self.lr,
+                                         momentum=self.opt.momentum,
+                                         weight_decay=self.opt.weightDecay,
+                                         nesterov=True)
+
+    def updatelearningrate(self, epoch):
+        self.lr = getlearningrate (epoch=epoch, opt=self.opt)
+        # update learning rate of model optimizer
+        for param_group in self.optimzer.param_groups:
+            param_group['lr'] = self.lr
+
     def forward(self, dark_input_var, light_input_var, labels_var=None):
         # forward and backward and optimize
         # print("darkinputsize", dark_input_var.size())
@@ -326,7 +497,7 @@ class Trainer (object):
         output = self.model (Pair)
         # outputsize = output[0].size()
         if labels_var is not None :  ##(x, x_structure)  labelopennarrow, labelsyne
-                loss = self.criterion (output, labels_var)
+                loss = self.criterion_focal (output, labels_var)
         return output,loss
 
 
@@ -483,6 +654,8 @@ def generate_factor(T, T_max=200):
     a = (1-(math.pow(float((T/T_max)),2)))
     # a = (math.pow (float ((T / T_max)), 2))
     # a =  (1 - (math.pow (float ((T / T_max)), 2)))
+    # a = 0.1
+    print("loss ratio", a)
     return a
 
 class Trainer_contra(object):
@@ -538,14 +711,11 @@ class Trainer_contra(object):
         # forward and backward and optimize
         Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         h_d, h_l, x = self.model(Pair)  #h_d, h_l, x
-        # distance = self.l2_dist.forward(h_d, h_l)
-        # pred_logits = self.sigmoid(distance)
         labels_contra = self.custom_replace(labels_var, 1., 0.)
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
             if opt.contra_focal == True:
                 # print("focal loss")
                 loss0 = self.criterion_focal(x, labels_var)
-                # loss0 = self.criterion (pred_logits, labels_var)
             else:
                 loss0 = self.criterion(x, labels_var)
 
@@ -556,11 +726,8 @@ class Trainer_contra(object):
                 )+0.3*self.criterion_contra (h_d_3, h_l_3, labels_contra)
             else:
                 loss1 = self.criterion_contra(h_d,h_l,labels_contra)
-            # loss1 = self.criterion_contra(h_d, h_l, labels_var)
-            # loss = loss0+0.1*loss1
         else:
             loss = None
-        # print("0.1")
         return x, loss0, loss1
 
     def backward(self, loss):
@@ -582,7 +749,7 @@ class Trainer_contra(object):
         end_time = start_time
         self.factor = generate_factor(T = epoch)
         # self.marginratio = generate_margin(T, T_max)
-        # self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
+        self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
         print("training", self.factor)
         for i, (dark_input, light_input, labels, _) in enumerate(train_loader):
             self.model.train()
@@ -609,7 +776,8 @@ class Trainer_contra(object):
 
             # loss = loss0+opt.loss_ratio*loss1
             # loss = self.factor*loss0+ (1-self.factor)*loss1
-            loss = loss0 + self.factor*loss1
+            # loss = loss0 + self.factor*loss1
+            loss = loss0 + 0.1* loss1
             self.backward(loss)
             loss_sum += float(loss.data)
             # Here, total_loss is accumulating history across your training loop, since loss is a differentiable variable with autograd history.
