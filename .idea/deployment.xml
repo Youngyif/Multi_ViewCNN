@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="yangyifan@222.201.187.244:22">
+  <component name="PublishConfigData" autoUpload="Always" serverName="yangyifan@222.201.187.232:22">
     <serverData>
-      <paths name="yangyifan@222.201.187.232:22">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="yangyifan@222.201.187.232:22 (1)">
+      <paths name="yangyifan@202.38.200.184:22">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="yangyifan@222.201.187.244:22">
+      <paths name="yangyifan@222.201.187.232:22">
         <serverdata>
           <mappings>
             <mapping deploy="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
-      <paths name="yangyifan@222.201.187.244:22 (1)">
+      <paths name="yangyifan@222.201.187.244:22">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="yangyifan@222.201.187.244:22 (1)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$/../multi-viewCNN" web="/" />
           </mappings>
         </serverdata>
       </paths>

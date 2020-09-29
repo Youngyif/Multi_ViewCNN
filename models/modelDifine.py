@@ -373,7 +373,7 @@ class resnet3d(nn.Module):
         ###conv fusion
         # self.conv11_top = nn.Conv3d(6, 3, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         # self.conv11_m_top = nn.Conv3d(6, 3, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
-        # self.conv11 = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
+        # self.conv11 = nn.Conv3d(8192, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=False)
         ###conv fusion
         self.conv1 = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
         self.bn1 = nn.BatchNorm3d(64)
@@ -392,11 +392,12 @@ class resnet3d(nn.Module):
         n=1
         if opt.cat ==True:
             n=1
-        if opt.contra or opt.contra_focal == True or opt.contra_focal_bilinear == True:
+        if opt.contra or opt.contra_focal == True or opt.contra_focal_bilinear == True :
             n=2
         if opt.contra_single==True:
             n=1
-
+        if opt.contra_multiscale:
+            n=4
         self.fc = nn.Linear (n * 512 * block.expansion, num_classes)
         if opt.multifuse==True:
             self.fc = nn.Linear(n*256 * block.expansion, num_classes)
@@ -421,7 +422,7 @@ class resnet3d(nn.Module):
         self.layer4_m = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool_m = nn.AdaptiveAvgPool3d((1, 1, 1))
         n = 2
-        self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
+        # self.fc_m = nn.Linear(n * 512 * block.expansion, num_classes)
         n=1
         # self.fc_contra = nn.Sequential(
         #     nn.Linear(n * 512 * block.expansion, 1024),
@@ -801,26 +802,29 @@ class resnet3d(nn.Module):
         # fullx = self.sigmoid (fullx)
         return h, fullx
 
-    def forward_single_mscale_single(self, x):
-        x_d, x_l, fullx_d, fullx_l = x
+    def forward_single_mscale_single(self, input):
+        x_d, x_l, fullx_d, fullx_l = input
         h_full_d, x_full_d = self.forward_largescle (fullx_d)
         h_full_l, x_full_l = self.forward_largescle (fullx_l)
         h_d, x_d = self.forward_smallscale (x_d)
         h_l, x_l = self.forward_smallscale (x_l)
         full_x = torch.cat((x_full_d, x_full_l),dim=1)
-        full_x = self.drop (full_x)
-        full_x = full_x.view (full_x.shape[0], -1)
+        # full_x = self.drop (full_x)
+        # full_x = full_x.view (full_x.shape[0], -1)
         # print(full_x.size())
-        full_x = self.fc_m (full_x)
-        full_x = self.sigmoid (full_x)
+        # full_x = self.fc_m (full_x)
+        # full_x = self.sigmoid (full_x)
         x = torch.cat ((x_d, x_l), dim=1)
+        # print(x.size(), full_x.size())
+        x = torch.cat((full_x,x),dim=1)
+        # x = self.conv11(x)
         x = self.drop (x)
 
         x = x.view (x.shape[0], -1)
 
         x = self.fc (x)
         x = self.sigmoid (x)
-        x = (x+full_x)/2
+        # x = (x+full_x)/2
 
         return {"h_full_d": h_full_d, "h_full_l": h_full_l, "h_d": h_d, "h_l": h_l,"x": x}
 
@@ -2606,8 +2610,8 @@ if __name__ == '__main__':
     x = (xl, xd, fullxd, fullxl)
     # x=(xl,xd)
     model = resnet3d()
-    h, a = model(x)
-    print(a.size(),  h[0].size(), h[1].size())
+    pred = model(x)
+    # print(a.size(),  h[0].size(), h[1].size())
     # input_shape = (2,3, 21, 244, 244)
     # # model.replace_logits(1)
     #
