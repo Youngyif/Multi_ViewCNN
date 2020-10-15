@@ -480,11 +480,13 @@ class Trainer (object):
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
 def generate_factor(T, T_max=200):
-    # a = (1-(math.pow(float((T/T_max)),2)))
-    a = (math.pow (float ((T / T_max)), 2))
+    # a = 1*(1-(math.pow(float((T/T_max)),2)))
+    # a = (math.pow (float ((T / T_max)), 2))
     # a =  (1 - (math.pow (float ((T / T_max)), 2)))
     # a = 1-float(T/T_max)
-    print(a)
+    # a = float (T / T_max)
+    # print(a)
+    a=1
     return a
 
 class Trainer_contra(object):
@@ -547,7 +549,7 @@ class Trainer_contra(object):
         if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
             # print("focal loss")
             loss0 = self.criterion_focal(x, labels_var)
-            loss1 = self.criterion_contra(h_d,h_l,labels_contra)+self.criterion_contra (h_full_d, h_full_l, labels_contra)
+            loss1 = self.criterion_contra(h_d,h_l,labels_contra) +  0.5*self.criterion_contra (h_full_d, h_full_l, labels_contra)
 
             # loss1 = self.criterion_contra(h_d, h_l, labels_var)
             # loss = loss0+0.1*loss1

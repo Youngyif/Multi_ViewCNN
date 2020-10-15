@@ -40,7 +40,7 @@ def main(net_opt=None):
     """requirements:
     apt-get install graphviz
     pip install pydot termcolor"""
-
+    CUDA_VISIBLE_DEVICES = 0, 1, 2, 3
     start_time = time.time ()
     opt = net_opt or NetOption ()
     print(opt.GPU)
@@ -91,18 +91,57 @@ def main(net_opt=None):
 
 
     # model
-    # if opt.netType =="dual_resnet3d":
-    #     model = dual_resnet3d(num_classes=opt.numclass, use_nl=True)
-        # mydict = model.state_dict()
-        # state_dict = torch.load(opt.pretrain)["model"]
-        # # print(state_dict)
-        # pretrained_dict = {k: v for k, v in enumerate(state_dict) if k not in ["fc.bias", 'fc.weight']}
-        # mydict.update(pretrained_dict)
-        # # a = mydict
-        # model.load_state_dict(mydict)
-        # for p in model.parameters():
-        #     p.requires_grad = False
-        # model.fc = nn.Linear(2048, 1)
+
+    if opt.netType == "I3D":
+        model = InceptionI3d()
+
+        if opt.resume_I3D:
+            model.replace_logits (1)
+            print ("resume")
+            mydict = model.state_dict ()
+            state_dict = torch.load (
+                "/home/yangyifan/model/synechiae/log_asoct_I3D_18_onevsall_bs8_baseline_contra1_I3D_oversample_alpha0.75_0723/model/checkpoint77.pkl",
+                map_location=torch.device ('cpu'))["model"]
+            # print (state_dict)
+            pretrained_dict = {k: v for k, v in state_dict.items ()}
+            mydict.update (pretrained_dict)
+            model.load_state_dict (mydict)
+        else:
+            print("loading pretrain model")
+            # model.load_state_dict(torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle"))
+            mydict = model.state_dict()
+            # print(mydict)
+            state_dict = torch.load("/home/yangyifan/code/multiViewCNN/pretrained/weights/rgb_imagenet.pt", map_location=torch.device('cpu'))
+            pretrained_dict_l={}
+            print("loading for large module")
+            for k, v in state_dict.items ():
+                if k in ["fc8.bias", "logits.conv3d.weight", "logits.conv3d.bias", "fc8.weight"]:
+                    continue
+                splits = k.split(".")
+                splits[0] = splits[0] +"_l"
+                pretrained_dict_l[".".join(splits)]=v
+
+
+            pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc8.bias", "logits.conv3d.weight", "fc8.weight"]}
+            mydict.update(pretrained_dict)
+            mydict.update (pretrained_dict_l)
+            model.load_state_dict(mydict)
+            model.replace_logits(1)
+    if opt.netType == "S3D":
+        model = S3D(opt.numclass)
+        file_weight = "/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/S3D_kinetics400.pt"
+        weight_dict = torch.load(file_weight)
+        model_dict = model.state_dict()
+        for name, param in weight_dict.items():
+            if 'module' in name:
+                name = '.'.join(name.split('.')[1:])
+            if name in model_dict:
+                if param.size() == model_dict[name].size():
+                    model_dict[name].copy_(param)
+                else:
+                    print(' size? ' + name, param.size(), model_dict[name].size())
+            else:
+                print(' name? ' + name)
     if opt.netType == 'multi_viewCNN':
         model = my_mvcnn(opt.numOfView)
     if opt.netType =="resnet3d":
@@ -119,22 +158,20 @@ def main(net_opt=None):
             # print(state_dict)
             pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
             mydict.update(pretrained_dict)
+            pretrained_dict_m = {}
+            print ("loading for large module")
+            for k, v in state_dict.items ():
+                if k in ["fc.bias", 'fc.weight']:
+                    continue
+                splits = k.split (".")
+                splits[0] = splits[0] + "_m"
+                pretrained_dict_m[".".join (splits)] = v
+            # mydict.update (pretrained_dict_m)
+            # print(mydict)
             model.load_state_dict(mydict)
-        # for param in model.parameters():  # nn.Module有成员函数parameters()
-        #     param.requires_grad = False  ##固定所有层
-        # model.fc = nn.Linear(512*4, 1)
-    if opt.netType =="lstm_mvcnn":
-        model = my_mvcnn_lstm(opt.numOfView)
-    # if opt.netType =="dual_extract_resnet3d":
-    #     model = dual_extract_resnet3d(num_classes=opt.numclass, use_nl=True)
-    #     mydict = model.state_dict()
-    #     state_dict = torch.load(opt.pretrain)
-    #     # print(state_dict)
-    #     pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
-    #     mydict.update(pretrained_dict)
-    #     model.load_state_dict(mydict)
 
 
+    # return
     model = dataparallel (model, opt.nGPU, opt.GPU)
     # trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
     trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
