@@ -18,8 +18,8 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 1  # number of GPUs to use by default
-        self.GPU =1# default gpu to use, options: range(nGPU)
+        self.nGPU = 2  # number of GPUs to use by default
+        self.GPU =0# default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -60,7 +60,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "resnet3d_contra_cumulative_loss_de_fixmargin_contra_margin=2_pretrain0923"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "resnet3d_BCE_1015"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
