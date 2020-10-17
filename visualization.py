@@ -64,6 +64,8 @@ class Visualization(object):
             for k, v in opt.__dict__.items():
                 f.write(str(k)+": "+str(v)+"\n")
     def writepath(self, wrongpath):
+        if wrongpath == None:
+            return
         print(">>>>>write wrong path")
         if os.path.isfile(self.wrong_path):
             os.remove(self.wrong_path)
@@ -75,6 +77,12 @@ class Visualization(object):
     def writelog(self, input_data):
         print(">>>>> write to log")
         txt_file = open(self.log_file, 'a+')
+        txt_file.write(str(input_data) + "\n")
+        txt_file.close()
+
+    def write_test_log(self, input_data, log_path):
+        print(">>>>> write to test_log")
+        txt_file = open(log_path, 'a+')
         txt_file.write(str(input_data) + "\n")
         txt_file.close()
 

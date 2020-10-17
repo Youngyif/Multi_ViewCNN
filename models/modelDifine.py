@@ -377,8 +377,10 @@ class resnet3d(nn.Module):
         n=1
         if opt.cat ==True:
             n=1
-        if opt.contra ==True:
+        if opt.contra or opt.contra_focal == True :
             n=2
+        if opt.contra_single==True:
+            n=1
         self.fc = nn.Linear(n*512 * block.expansion, num_classes)
 
         ##### multi scale
@@ -442,6 +444,7 @@ class resnet3d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward_single(self, x):
+        print("single, dark")
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -454,14 +457,17 @@ class resnet3d(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
+        print("after avgpool",x.size())
         x = self.drop(x)
 
         x = x.view(x.shape[0], -1)
+        print("before fc", x.size())
         x = self.fc(x)
         x = self.sigmoid(x)
         return x
 
     def forward_single_mscale_single(self, x):
+        print("msscale single light")
         x_d, x_l, fullx_d, fullx_l = x
         # x_d = self.conv1(x_d)
         # x_d = self.bn1(x_d)
@@ -611,6 +617,41 @@ class resnet3d(nn.Module):
         x = self.sigmoid(x)
         return x
 
+    def forward_contra_learning_2(self, x):
+        x_d,x_l = x
+        x_d = self.conv1(x_d)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+
+        x_d = self.layer1(x_d)
+        x_d = self.maxpool2(x_d)
+        x_d = self.layer2(x_d)
+        x_d = self.layer3(x_d)
+        x_d = self.layer4(x_d)
+
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
+        # print("xsize layer3", x_l.size())
+        x_l = self.layer4(x_l)
+        x = torch.cat((x_l, x_d), dim=1)
+        # print("xsize layer4",x_l.size())
+        # x = self.conv11(x)
+        # print("xsize 11", x.size())
+        x = self.avgpool(x)
+        x = self.drop(x)
+
+        x = x.view(x.shape[0], -1)
+        x = self.fc(x)
+        x = self.sigmoid(x)
+        return x
+
     def forward_single_contra(self, x):
         x_d, x_l = x
         # print(x_d.size())
@@ -629,6 +670,7 @@ class resnet3d(nn.Module):
         h_d = x_d
         h_d = h_d.view(h_d.size(0), -1)
         h_d = self.fc_contra(h_d)
+        h_d = F.normalize(h_d, dim=1)
         ###
         x_d = self.drop(x_d)
         # print(x_d.size())
@@ -650,6 +692,7 @@ class resnet3d(nn.Module):
         h_l = h_l.view(h_l.size(0), -1)
         sizehl = h_l.size()
         h_l = self.fc_contra(h_l)
+        h_l = F.normalize(h_l, dim=1)
         ###
 
 
@@ -661,6 +704,53 @@ class resnet3d(nn.Module):
         x = self.sigmoid(x)
         return h_d, h_l, x
 
+    def forward_single_contra_learning(self, x):
+        x_d, x_l = x
+        # print(x_d.size())
+        x_d = self.conv1(x_d)
+        x_d = self.bn1(x_d)
+        x_d = self.relu(x_d)
+        x_d = self.maxpool1(x_d)
+
+        x_d = self.layer1(x_d)
+        x_d = self.maxpool2(x_d)
+        x_d = self.layer2(x_d)
+        x_d = self.layer3(x_d)
+        x_d = self.layer4(x_d)
+        x_d = self.avgpool(x_d)
+        ###get similarity vector
+        h_d = x_d.view(x_d.shape[0], -1)
+        h_d = F.normalize(h_d,dim=1)
+        ###
+        # x_d = self.drop(x_d)
+        # print(x_d.size())
+        # x_d = x_d.view(x_d.shape[0], -1)
+        # x_d = self.fc_d(x_d)
+
+        x_l = self.conv1(x_l)
+        x_l = self.bn1(x_l)
+        x_l = self.relu(x_l)
+        x_l = self.maxpool1(x_l)
+        x_l = self.layer1(x_l)
+        x_l = self.maxpool2(x_l)
+        x_l = self.layer2(x_l)
+        x_l = self.layer3(x_l)
+        x_l = self.layer4(x_l)
+        x_l = self.avgpool(x_l)
+        ###get similarity vector
+        h_l = x_l.view(x_l.shape[0], -1)
+        h_l = F.normalize(h_l, dim=1)
+        ###
+
+
+        # x = torch.cat((x_l,x_d),dim=1)
+        # x = self.drop(x)
+        # x = x.view(x.shape[0], -1)
+        # #
+        # x = self.fc(x)
+        # x = self.sigmoid(x)
+        return h_d, h_l
+        # return x
     def forward_multi(self, x):
         clip_preds = []
         for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224
@@ -674,7 +764,7 @@ class resnet3d(nn.Module):
         clip_preds = torch.stack(clip_preds, 1).mean(1)  # (B, 400)
         return clip_preds
 
-    def forward(self, batch):##x[0] is dark x[1] is light Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
+    def forward(self, batch):##x[0] is dark    x[1] is light Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         x_d = batch[0]
         x_l = batch[1]
         fullx_d = batch[2]
@@ -683,8 +773,17 @@ class resnet3d(nn.Module):
         ms_x = (x_d, x_l, fullx_d, fullx_l)
         batch = {'frames': x, 'frames1': ms_x} ##0 dark 1 light
         # 5D tensor == single clip
-        if opt.contra == True:
+        if opt.contra == True or opt.contra_focal == True:
             pred = self.forward_single_contra(batch['frames'])
+            # pred = self.forward_single(batch['frames'][0])
+        if opt.contra_single == True:
+            # pred = self.forward_single_contra(batch['frames'])
+            pred = self.forward_single(batch['frames'][1]) ##0 dark 1 light
+        if opt.contra_learning == True:
+            pred = self.forward_single_contra_learning(batch['frames'])
+        if opt.contra_learning_2 == True:
+            print("contra_learning")
+            pred = self.forward_contra_learning_2(batch['frames'])
         if opt.mscale == True:
             # print("multiscale cat")
             pred = self.forward_single_mscale_single(batch['frames1'])
@@ -1035,11 +1134,12 @@ class ConvBlock(nn.Module):  ###结构提取代码
 
 if __name__ == '__main__':
     opt = NetOption()
-    xl = torch.randn(4, 21, 3, 244, 244)
-    xd = torch.randn(4, 21, 3, 244, 244)
-    fullxl = torch.randn(4, 21, 3, 244, 244)
-    fullxd = torch.randn(4, 21, 3, 244, 244)
+    xl = torch.randn(4, 3, 21, 244, 244)
+    xd = torch.randn(4, 3, 21, 244, 244)
+    fullxl = torch.randn(4, 3, 21, 244, 244)
+    fullxd = torch.randn(4, 3, 21, 244, 244)
     x = (xl, xd, fullxd, fullxl)
+    # x=(xl,xd)
     model = resnet3d()
     a = model(x)
 

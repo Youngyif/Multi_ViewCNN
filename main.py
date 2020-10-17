@@ -1,11 +1,12 @@
 from opt.opt import *
-from dataloader.dataloader import *
+from dataloader.dataloaders import *
 from visualization import *
 from termcolor import colored
 import torch.backends.cudnn as cudnn
 from saveModel.checkpoint import *
 from trainer import *
-
+from models.baseline_model import *
+from models.slowFastNet import SlowFast, resnet50_sl
 
 def dataparallel(model, ngpus, gpu0=0):
     if ngpus == 0:
@@ -69,6 +70,7 @@ def main(net_opt=None):
         print("do not retrain")
         check_point_params = check_point.check_point_params
     elif opt.resume:
+        print("resume")
         check_point_params = check_point.resumemodel ()
     else:
         check_point_params = check_point.check_point_params
@@ -107,52 +109,150 @@ def main(net_opt=None):
         model = my_mvcnn(opt.numOfView)
     if opt.netType =="resnet3d":
         model = resnet3d(num_classes=opt.numclass, use_nl=True)
+        print("no nonlocal")
         if opt.resume and opt.pretrain:
             print("!!can not load two model at one time!!")
             return
         if opt.resume:
             state_dict = check_point_params["model"]
             model.load_state_dict(state_dict)
-        if opt.pretrain:
+            # print(state_dict)
+            # if opt.contra_learning_2 == True:
+            #     for param in model.parameters():  # nn.Module有成员函数parameters()
+            #         param.requires_grad = False  ##固定所有层
+            # model.fc = nn.Linear(512*4*2, 1)
+
+
+        elif opt.pretrain:
             mydict = model.state_dict()
-            state_dict = torch.load(opt.pretrain)
+            state_dict = torch.load(opt.pretrain, map_location=torch.device('cpu'))
             # print(state_dict)
             pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
             mydict.update(pretrained_dict)
             model.load_state_dict(mydict)
+            print ("loading for large module")
+            pretrained_dict_m = {}
+            for k, v in state_dict.items ():
+                if k in ["fc.bias", 'fc.weight']:
+                    continue
+                splits = k.split (".")
+                splits[0] = splits[0] + "_m"
+                pretrained_dict_m[".".join (splits)] = v
+            # mydict.update (pretrained_dict_m)
         # for param in model.parameters():  # nn.Module有成员函数parameters()
         #     param.requires_grad = False  ##固定所有层
         # model.fc = nn.Linear(512*4, 1)
     if opt.netType =="lstm_mvcnn":
         model = my_mvcnn_lstm(opt.numOfView)
-    # if opt.netType =="dual_extract_resnet3d":
-    #     model = dual_extract_resnet3d(num_classes=opt.numclass, use_nl=True)
-    #     mydict = model.state_dict()
-    #     state_dict = torch.load(opt.pretrain)
-    #     # print(state_dict)
-    #     pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
-    #     mydict.update(pretrained_dict)
-    #     model.load_state_dict(mydict)
+
+    if opt.netType == "C3D":
+        model = C3D()
+        print("loading pretrain model")
+        # model.load_state_dict(torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle"))
+        mydict = model.state_dict()
+        state_dict = torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle", map_location=torch.device('cpu'))
+        # print(state_dict)
+        pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc8.bias", 'fc8.weight']}
+        mydict.update(pretrained_dict)
+        model.load_state_dict(mydict)
+    if opt.netType == "I3D":
+        model = InceptionI3d()
+
+        if opt.resume_I3D:
+            model.replace_logits (1)
+            print ("resume")
+            mydict = model.state_dict ()
+            state_dict = torch.load (
+                "/home/yangyifan/model/synechiae/log_asoct_I3D_18_onevsall_bs8_baseline_contra1_I3D_oversample_alpha0.75_0723/model/checkpoint77.pkl",
+                map_location=torch.device ('cpu'))["model"]
+            # print (state_dict)
+            pretrained_dict = {k: v for k, v in state_dict.items ()}
+            mydict.update (pretrained_dict)
+            model.load_state_dict (mydict)
+        else:
+            print("loading pretrain model")
+            # model.load_state_dict(torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle"))
+            mydict = model.state_dict()
+            state_dict = torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/rgb_imagenet.pt", map_location=torch.device('cpu'))
+            # print(state_dict)
+            pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc8.bias", 'fc8.weight']}
+            mydict.update(pretrained_dict)
+            model.load_state_dict(mydict)
+            model.replace_logits(1)
+    if opt.netType == "S3D":
+        model = S3D(opt.numclass)
+        file_weight = "/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/S3D_kinetics400.pt"
+        weight_dict = torch.load(file_weight)
+        model_dict = model.state_dict()
+        for name, param in weight_dict.items():
+            if 'module' in name:
+                name = '.'.join(name.split('.')[1:])
+            if name in model_dict:
+                if param.size() == model_dict[name].size():
+                    model_dict[name].copy_(param)
+                else:
+                    print(' size? ' + name, param.size(), model_dict[name].size())
+            else:
+                print(' name? ' + name)
+    if opt.netType == "slowfast":
+        model = resnet50_sl(class_num=opt.numclass)
+        pretrained="/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/SLOWFAST_4x16_R50.pkl"
+        if pretrained is not None:
+            pretrained_dict = torch.load(pretrained, map_location='cpu')
+            try:
+                model_dict = model.module.state_dict()
+            except AttributeError:
+                model_dict = model.state_dict()
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+            print("load pretrain model")
+            model_dict.update(pretrained_dict)
+            model.load_state_dict(model_dict)
+
 
 
     model = dataparallel (model, opt.nGPU, opt.GPU)
     # trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
-    trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
+    if opt.contra_learning:
+        print(">>>>trainer : contra_learning")
+        trainer = Trainer_contra_learning(model=model, opt=opt, optimizer=optimizer)
+    elif opt.contra_learning_2:
+        print(">>>>trainer : contra_learning")
+        trainer = Trainer_contra_learning_2(model=model, opt=opt, optimizer=optimizer)
+    elif opt.contra ==True or opt.contra_focal == True:
+        print(">>>>trainer : contra")
+        trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
+        # trainer = Trainer_multiscale(model=model, opt=opt, optimizer=optimizer)
+    elif opt.mscale == True or opt.contra_single == True:
+        print(">>>>trainer : contra_SINGLE")
+        trainer = Trainer_multiscale(model=model, opt=opt, optimizer=optimizer)
+    else:
+        trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
+
+
     print ("|===>Create trainer")
 
     if opt.testOnly:
-        trainer.test (epoch=0, test_loader=test_loader)
+        log_path = opt.test_log
+        visualize = Visualization (opt=opt)
+        auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = trainer.test (epoch=0, test_loader=test_loader)
+        print(">>>>running experiment:", opt.experimentID)
+        log_str = "%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%d\t%d\t%d\t%d\t" % (
+            auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp)
+        visualize.write_test_log (log_str, log_path)
+
         return
 
     # define visualizer
     visualize = Visualization (opt=opt)
     visualize.writeopt (opt=opt)
     best_auc = 0
+    best_loss = 0
     start_epoch = opt.resumeEpoch
     for epoch in range (start_epoch, opt.nEpochs):
-
+        print ("|===>Training epoch: " ,epoch)
         train_auc, train_loss = trainer.train (
             epoch=epoch, train_loader=train_loader)
+        print("|===>Testing epoch: ", epoch)
         test_auc, test_loss, test_acc, test_precision, test_recall, test_f1, test_gmean, tn, fp, fn, tp, wronglist= trainer.test (
             epoch=epoch, test_loader=test_loader)
 
@@ -162,19 +262,31 @@ def main(net_opt=None):
         test_loss, test_acc, test_precision, test_recall, test_f1, test_gmean, tn, fp, fn, tp)
         visualize.writelog (log_str)
         best_flag = False
-        if best_auc <= test_auc:
-            best_auc = test_auc
-            best_flag = True
-            print (colored ("# %d ==>Best Result is: AUC: %f\n" % (
-                epoch, best_auc), "red"))
-            visualize.writepath(wronglist)  ###write path of images which are wrongly classified
+        if opt.contra_learning == True:
+            if best_loss <= train_loss:
+                best_loss = train_loss
+                best_flag = True
+                print (colored ("# %d ==>Best Result is: LOSS: %f\n" % (
+                    epoch, best_loss), "red"))
+                visualize.writepath(wronglist)  ###write path of images which are wrongly classified
+            else:
+                print (colored ("# %d ==>Best Result is: AUC: %f\n" % (
+                    epoch, best_auc), "blue"))
         else:
-            print (colored ("# %d ==>Best Result is: AUC: %f\n" % (
-                epoch, best_auc), "blue"))
+            if best_auc <= test_auc:
+                best_auc = test_auc
+                best_flag = True
+                print (colored ("# %d ==>Best Result is: AUC: %f\n" % (
+                    epoch, best_auc), "red"))
+                visualize.writepath(wronglist)  ###write path of images which are wrongly classified
+            else:
+                print (colored ("# %d ==>Best Result is: AUC: %f\n" % (
+                    epoch, best_auc), "blue"))
 
         # save check_point
         check_point.savemodel (epoch=epoch, model=trainer.model,
                                opts=trainer.optimzer, best_flag=best_flag)
+
 
     end_time = time.time ()
     time_interval = end_time - start_time

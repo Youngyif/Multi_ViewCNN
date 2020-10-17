@@ -25,36 +25,36 @@ def getone(realpath, indexs, region):
     if indexs==0:
         res = {}
         if region=="right":
-            pathlist = [(realpath + str(5), 'left', 5),(realpath + str(0), 'right', 0)]
+            pathlist = [(realpath + str(0), 'right', 0),(realpath + str(5), 'left', 5)]
             for path, region, i  in pathlist:
                 vertical_str = "/vertical_"+region[0]+".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
-                if i == 5:
-                    res["imagelist_half1"] = all_image_path[-10:]
-                    res["vertical_half1"] = vertical
-                    res["region_half1"] = region
                 if i == 0:
-                    res["imagelist_half2"]= all_image_path[:11]
+                    res["imagelist_half2"]= all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
+                if i == 5:
+                    res["imagelist_half1"] = all_image_path[-8:]
+                    res["vertical_half1"] = vertical
+                    res["region_half1"] = region
         elif region=="left":
-            pathlist = [(realpath + str(5), 'right', 5), (realpath + str(0), 'left', 0)]
+            pathlist = [(realpath + str(0), 'left', 0), (realpath + str(5), 'right', 5)]
             for path, region, i in pathlist:
                 vertical_str = "/vertical_" + region[0] + ".npy"
                 vertical = int(np.load(path + vertical_str))
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
-
-                if i == 5:
-                    res["imagelist_half1"] = all_image_path[-10:]
-                    res["vertical_half1"] = vertical
-                    res["region_half1"] = region
                 if i == 0:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
+
+                if i == 5:
+                    res["imagelist_half1"] = all_image_path[-8:]
+                    res["vertical_half1"] = vertical
+                    res["region_half1"] = region
 
     if indexs == 1:
         res = {}
@@ -69,12 +69,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 0:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 1:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -87,12 +87,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 0:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 1:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -107,12 +107,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 1:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 2:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -125,12 +125,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 1:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 2:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -145,12 +145,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 2:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 3:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -163,12 +163,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 2:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
 
                 if i == 3:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
@@ -183,12 +183,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 3:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
                     # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 4:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
                     # res.append((all_image_path[:11], vertical, path, region))
@@ -201,12 +201,12 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 3:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
                     # res.append((all_image_path[-10:], vertical, path, region))
                 if i == 4:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
                     # res.append((all_image_path[:11], vertical, path, region))
@@ -221,11 +221,11 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path = sorted(all_image_path)
                 if i == 4:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
                 if i == 5:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
         elif region == "left":
@@ -236,15 +236,15 @@ def getone(realpath, indexs, region):
                 all_image_path = glob.glob(os.path.join(path, "*.jpg"))
                 all_image_path=sorted(all_image_path)
                 if i == 4:
-                    res["imagelist_half1"] = all_image_path[-10:]
+                    res["imagelist_half1"] = all_image_path[-8:]
                     res["vertical_half1"] = vertical
                     res["region_half1"] = region
                 if i == 5:
-                    res["imagelist_half2"] = all_image_path[:11]
+                    res["imagelist_half2"] = all_image_path[:8]
                     res["vertical_half2"] = vertical
                     res["region_half2"] = region
 
-    # print(res)
+    # print(len(res["imagelist_half1"]),len(res["imagelist_half2"]),res["imagelist_half1"],res["imagelist_half2"])
     return res
 
 def make_dataset(rootpath, root, label_df):
@@ -275,7 +275,7 @@ def make_dataset(rootpath, root, label_df):
 
     return images_light, images_dark
 
-def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vertical_half1":vertical_half1, "region_half1":region_half1,,,half2,,,,"lalel":label,"details":CS-001_od_left_1}
+def make3d(dicts, transform):   ##dict   {"imagelist_half1":imagelist1, "vertical_half1":vertical_half1, "region_half1":region_half1,,,half2,,,,"lalel":label,"details":CS-001_od_left_1}
     imgs = Image.open(dicts["imagelist_half1"][0]).convert("RGB")
     lists = [dicts["imagelist_half1"], dicts["imagelist_half2"]]
     label = dicts["label"]
@@ -290,7 +290,6 @@ def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vert
     fullimglist = []
     index=0
     details = dicts["details"]
-    counts1=0
     for imgpathlist in lists:
         for imgpath in imgpathlist:
             region = regionlist[index]
@@ -308,10 +307,8 @@ def make3d(dicts, transform,dl):   ##dict   {"imagelist_half1":imagelist1, "vert
             if region == "right":
                 img = img.transpose(Image.FLIP_LEFT_RIGHT)
                 # img.save('/home/yangyifan/save/crop_INTERNAL.jpg')
-            img.save('/home/yangyifan/save/crop_INTERNAL'+dl+str(counts1)+'.jpg')
             imglist.append(transform(img))
             fullimglist.append(transform(fullimg))
-            counts1+=1
         index+=1
     input = torch.stack (imglist).permute(1, 0, 2, 3)
     fullinput = torch.stack (fullimglist).permute(1, 0, 2, 3)
@@ -331,8 +328,8 @@ class Myloader(data.Dataset):
     def __getitem__(self, index):
         images_light = self.images_light[index]
         images_dark = self.images_dark[index]
-        dark_input, label, dark_full_input, details = make3d(images_dark,   self.transform,"dark")
-        light_input, label, light_full_input, details = make3d (images_light,   self.transform,"light")
+        dark_input, label, dark_full_input, details = make3d(images_dark,   self.transform)
+        light_input, label, light_full_input, details = make3d (images_light,   self.transform)
         return (dark_input, dark_full_input), (light_input, light_full_input), label, details
 
     def __len__(self):
