@@ -24,7 +24,7 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 2  # number of GPUs to use by default
+        self.nGPU = 4  # number of GPUs to use by default
         self.GPU =4 # default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedyincreasing training data for cifar10
         self.numclass = 1
@@ -48,7 +48,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "I3D"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | C3D | I3D  | S3D | slowfast
-        self.experimentID = "multiscale_ratio0.1_resnet3d_cumulative_CONTRA0.5-0_oversample_alpha0.75_1008"
+        self.experimentID = "ratio1_I3D_CONTRA1-0_oversample_alpha0.75_1017"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
@@ -64,8 +64,8 @@ class NetOption (object):
         self.contra_single = False
         self.contra_learning = False
         self.contra_learning_2 = False
-        self.contra_multiscale = True
-        self.imgsize = 244  ##112 FOR C3D  224 FOR I3D 244 FOR S3D
+        self.contra_multiscale = False
+        self.imgsize = 224  ##112 FOR C3D  224 FOR I3D 244 FOR S3D
         self.typedata = "both"  ##dark|light|both
         ###--draw Roc---###
         self.draw_ROC = False
@@ -80,6 +80,7 @@ class NetOption (object):
         # self.resume ="/mnt/dataset/model/darklight/log_asoct_resnet3d_18_onevsall_bs8_shuffle_index0_oversample__focal_balance_alpha0.75_sigmoid_SORT_FN_INDEX_permute_newone_contra_resnet3d_0424/model/best_model.pkl"
         # self.resume = "/home/yangyifan/model/synechiae/log_asoct_resnet3d_18_onevsall_bs8_CutInHalf_multiscale_resnet3d_cumulative_CONTRA0.5-0_oversample_alpha0.75_0930/model/checkpoint88.pkl"
         self.resume = None
+        self.resume_I3D = None
         # self.resume_I3D = "/home/yangyifan/model/synechiae/log_asoct_I3D_18_onevsall_bs8_CutInHalf_baseline_I3DCONTRA0.1_oversample_alpha0.75_0914/model/best_model.pkl"
         # self.resume_I3D = "/home/yangyifan/model/synechiae/log_asoct_I3D_18_onevsall_bs8_baseline_contra1_I3D_oversample_alpha0.75_0723/model/checkpoint77.pkl"
         # self.test_log = "/home/yangyifan/model/test_log/log_asoct_I3D_18_onevsall_bs8_baseline_contra1_I3D_oversample_alpha0.75_0723_checkpoint77.txt"
