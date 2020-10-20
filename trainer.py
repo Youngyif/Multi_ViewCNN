@@ -290,6 +290,8 @@ class Trainer (object):
             self.criterion = nn.BCELoss ().cuda ()
         else:
             self.criterion = nn.CrossEntropyLoss ().cuda ()
+        if opt.contra_focal == True:
+            self.criterion_focal = FocalLoss (alpha=0.75, gamma=2)
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
@@ -322,10 +324,10 @@ class Trainer (object):
         # print("pair0size", Pair[0].size())
         # labelsize = labels_var[1].size()
         # pairsize = Pair[0].size()
-        output = self.model (Pair)
+        output = self.model (Pair[0])
         # outputsize = output[0].size()
         if labels_var is not None :  ##(x, x_structure)  labelopennarrow, labelsyne
-                loss = self.criterion (output, labels_var)
+                loss = self.criterion_focal (output, labels_var)
         return output,loss
 
 

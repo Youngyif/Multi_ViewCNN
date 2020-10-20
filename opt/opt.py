@@ -24,8 +24,8 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 4  # number of GPUs to use by default
-        self.GPU =4 # default gpu to use, options: range(nGPU)
+        self.nGPU = 1  # number of GPUs to use by default
+        self.GPU =5 # default gpu to use, options: range(nGPU)
         self.datasetRatio = 1.0  # greedyincreasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -48,7 +48,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "I3D"  # options: ResNet | DenseNet | Inception-v3 | AlexNet |resnet3d |multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | C3D | I3D  | S3D | slowfast
-        self.experimentID = "ratio1_I3D_CONTRA1-0_oversample_alpha0.75_1017"
+        self.experimentID = "light_I3D_1017"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
@@ -61,12 +61,12 @@ class NetOption (object):
         self.contra = False
         self.contra_focal = True
         self.twoway = False
-        self.contra_single = False
+        self.contra_single = True
         self.contra_learning = False
         self.contra_learning_2 = False
         self.contra_multiscale = False
         self.imgsize = 224  ##112 FOR C3D  224 FOR I3D 244 FOR S3D
-        self.typedata = "both"  ##dark|light|both
+        self.typedata = "light"  ##dark|light|both
         ###--draw Roc---###
         self.draw_ROC = False
         # ---------- Resume or Retrain options --------------------------------
