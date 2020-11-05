@@ -10,6 +10,13 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://yangyifan@222.201.187.232:22/home/yangyifan/miniconda3/envs/mvcnn/bin/python3.8">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>

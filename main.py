@@ -212,6 +212,7 @@ def main(net_opt=None):
         # save check_point
         check_point.savemodel (epoch=epoch, model=trainer.model,
                                opts=trainer.optimzer, best_flag=best_flag)
+        # if epoch == 32: break
 
     end_time = time.time ()
     time_interval = end_time - start_time

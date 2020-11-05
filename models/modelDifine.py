@@ -405,7 +405,7 @@ class resnet3d(nn.Module):
         ##### multi scale
         # self.conv11_m = nn.Conv3d(2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
         # self.conv11_final = nn.Conv3d(4096, 2048, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
-        # ##conv fusion
+        ##conv fusion
         self.inplanes = 64
         self.conv1_m = nn.Conv3d(3, 64, kernel_size=(5, 7, 7), stride=(2, 2, 2), padding=(2, 3, 3), bias=False)
         self.bn1_m = nn.BatchNorm3d(64)
@@ -432,17 +432,22 @@ class resnet3d(nn.Module):
         #     nn.ReLU(inplace=True),
         #
         #     nn.Linear(500, 5))
+        # self.fc_contra = nn.Sequential (
+        #     nn.Linear (n * 512 * block.expansion, 500),
+        #     nn.ReLU (inplace=True),
+        #
+        #     nn.Linear (500, 5))
         self.fc_contra_large_scale = nn.Sequential(
-            nn.Linear(n * 512 * block.expansion, 500),
+            nn.Linear(n * 512 * block.expansion, 512),
             nn.ReLU(inplace=True),
 
-            nn.Linear(500, 5))
+            nn.Linear(512, 256))
 
         self.fc_contra_small_scale = nn.Sequential (
-            nn.Linear (n * 512 * block.expansion, 500),
+            nn.Linear (n * 512 * block.expansion, 512),
             nn.ReLU (inplace=True),
 
-            nn.Linear (500, 5))
+            nn.Linear (512, 256))
 
         self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
@@ -642,7 +647,7 @@ class resnet3d(nn.Module):
 
     def forward_single_contra(self, x):
         # print("contra")
-        x_d, x_l = x[0],x[1]
+        x_d, x_l = x[2],x[3]
         x_d = self.conv1(x_d)
         x_d = self.bn1(x_d)
         x_d = self.relu(x_d)
@@ -1039,10 +1044,12 @@ class resnet3d(nn.Module):
             # if batch['frames'].dim() == 5:
             # print("catmodel")
             pred = self.forward_single_cat(batch['frames'])
-
-        if opt.contra_multiscale and opt.contra_focal:
+        if  opt.contra_multiscale and opt.contra_focal:
             # print("multiscal_contra")
             pred = self.forward_single_mscale_single(batch['frames1'])
+        if  not opt.contra_multiscale and opt.contra_focal:
+            # print("multiscal_contra")
+            pred = self.forward_single_contra(batch['frames1'])
 
         return pred
 

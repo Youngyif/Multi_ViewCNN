@@ -13,8 +13,11 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 from models.contrastiveLoss import *
+
 # from models.nt_xent  import *
 from models.Focal_loss_sigmoid  import *
+from models.focal_contrastive_Loss import *
+from models.soft_contrastiveloss import *
 # from models.utiils import PairwiseDistance
 
 single_train_time = 0
@@ -480,13 +483,14 @@ class Trainer (object):
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
 def generate_factor(T, T_max=200):
-    # a = 1*(1-(math.pow(float((T/T_max)),2)))
+    a = 1*(1-(math.pow(float((T/T_max)),0.5)))
+    # a =
     # a = (math.pow (float ((T / T_max)), 2))
     # a =  (1 - (math.pow (float ((T / T_max)), 2)))
     # a = 1-float(T/T_max)
     # a = float (T / T_max)
     # print(a)
-    a=1
+    # a=1
     return a
 
 class Trainer_contra(object):
@@ -503,8 +507,10 @@ class Trainer_contra(object):
             self.criterion = nn.BCELoss().cuda()
         else:
             self.criterion = nn.CrossEntropyLoss().cuda()
+        self.criterion_BCE = nn.BCELoss ().cuda ()
         self.sigmoid = nn.Sigmoid()
-        self.criterion_contra = ContrastiveLoss(margin=opt.margin)
+        # self.criterion_contra = Focal_ContrastiveLoss(margin=opt.margin)
+        self.criterion_contra = soft_ContrastiveLoss ()
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
@@ -540,23 +546,44 @@ class Trainer_contra(object):
 
     def forward(self, dark_input_var, light_input_var, fulldark_var, fulllight_var, labels_var=None):
         # forward and backward and optimize
+        # Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         Pair = (dark_input_var, light_input_var, fulldark_var, fulllight_var)
         predict = self.model(Pair)  #h_d, h_l, x
-        h_full_d, h_full_l, h_d, h_l, x = predict["h_full_d"], predict["h_full_l"], predict["h_d"], predict["h_l"], predict["x"]
+        if opt.contra_multiscale:
+            h_full_d, h_full_l, h_d, h_l, x = predict["h_full_d"], predict["h_full_l"], predict["h_d"], predict["h_l"], predict["x"]
+            labels_contra = self.custom_replace (labels_var, 1., 0.)
+            if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
+                # print("before bce loss", x)
+                loss0 = self.criterion_focal (x, labels_var)
+
+                loss1 = self.criterion_contra (h_d, h_l, labels_contra) + 0.5 * self.criterion_contra (h_full_d,
+                                                                                                       h_full_l,
+                                                                                                       labels_contra)
+                # print(loss0, loss1)
+                # loss1 = self.criterion_contra(h_d, h_l, labels_var)
+                # loss = loss0+0.1*loss1
+            else:
+                loss = None
+            # print("0.1")
+            return x, loss0, loss1
+        else:
+            h_d, h_l, x = predict
+            labels_contra = self.custom_replace (labels_var, 1., 0.)
+            if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
+                # print("before bce loss", x)
+                loss0 = self.criterion_focal (x, labels_var)
+                # print("after loss0", loss0)
+                loss1 = self.criterion_contra (h_d, h_l, labels_contra)
+
+                # loss1 = self.criterion_contra(h_d, h_l, labels_var)
+                # loss = loss0+0.1*loss1
+            else:
+                loss = None
+            # print("0.1")
+            return x, loss0, loss1
         # distance = self.l2_dist.forward(h_d, h_l)
         # pred_logits = self.sigmoid(distance)
-        labels_contra = self.custom_replace(labels_var, 1., 0.)
-        if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
-            # print("focal loss")
-            loss0 = self.criterion_focal(x, labels_var)
-            loss1 = self.criterion_contra(h_d,h_l,labels_contra) +  0.5*self.criterion_contra (h_full_d, h_full_l, labels_contra)
 
-            # loss1 = self.criterion_contra(h_d, h_l, labels_var)
-            # loss = loss0+0.1*loss1
-        else:
-            loss = None
-        # print("0.1")
-        return x, loss0, loss1
 
     def backward(self, loss):
         self.optimzer.zero_grad()
@@ -649,7 +676,7 @@ class Trainer_contra(object):
                 dark_full_var = Variable(dark_input[1].cuda())
                 light_full_var = Variable(light_input[1].cuda())
                 output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
-                loss = loss0 + opt.loss_ratio * loss1
+                loss = loss0 + self.factor * loss1
                 # loss = self.factor * loss0 + (1 - self.factor) * loss1
                 loss_sum += float(loss.data) / iters
                 prediction = output.data.cpu()

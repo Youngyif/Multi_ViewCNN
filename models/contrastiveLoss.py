@@ -41,5 +41,5 @@ if __name__ == '__main__':
     b = torch.randn(64,5)
     a = F.normalize(a, dim=1)
     b = F.normalize(b, dim=1)
-    distance, loss1 = loss(a,b,1)
-    print(distance, loss1)
+    loss1 = loss(a,b,1)
+    print(loss1)

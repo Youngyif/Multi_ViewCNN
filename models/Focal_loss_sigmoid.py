@@ -36,8 +36,16 @@ class FocalLoss(nn.Module):
             # pt=torch.randn(input.size())
             # pt=Variable(pt)
             pt=input.view(-1)*(target.view(-1)==1.).float()+(1-input.view(-1))*(target.view(-1)==0.).float()
-#         loss = -self.alpha * (torch.pow((1 - pt), self.gamma)) * torch.log(pt + self.EPS)
+#           loss = -self.alpha * (torch.pow((1 - pt), self.gamma)) * torch.log(pt + self.EPS)
             loss=-self.alpha*(torch.pow((1-pt),self.gamma))*torch.log(pt+self.EPS)*(target.view(-1)==1.).float()-\
             (1 - self.alpha)* (torch.pow((1 - pt), self.gamma)) * torch.log(pt + self.EPS) * (target.view(-1) == 0.).float()
             self.loss = loss.mean()
             return self.loss
+
+
+if __name__ == '__main__':
+    input = torch.rand((8,1))
+    target = torch.ones(8,1)
+    focal = FocalLoss()
+    loss = focal(input, target)
+    print(loss)
