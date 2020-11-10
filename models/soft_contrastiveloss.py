@@ -11,7 +11,7 @@ def cosine_distance(prototype1, prototype2):
 
 class soft_ContrastiveLoss(torch.nn.Module):
 
-    def __init__(self, alpha=0.25, gamma=1, margin=0.2):
+    def __init__(self, alpha=0.5, gamma=2, margin=0.2):
         super(soft_ContrastiveLoss, self).__init__()
         self.margin = margin
         self.sigmoid =  nn.Sigmoid()

@@ -165,8 +165,8 @@ class DataLoader (object):
             train_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/overtrain_shuffle.txt"##fix version 0430
             test_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/valv5.txt"##0413##fix version 0430
         if opt.dataset == "BJ":
-            # train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
-            train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"
+            train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
+            # train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"
             test_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/test_bj.txt"  ##BJ TEST
 
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -198,7 +198,7 @@ class DataLoader (object):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.n_threads,
-            pin_memory=False)
+            pin_memory=True)
 
         test_transform = transforms.Compose ([
             # transforms.Grayscale(num_output_channels=1),  ##转为灰度图 output channel 由3改为1
@@ -213,7 +213,7 @@ class DataLoader (object):
             batch_size=int (self.batch_size),
             shuffle=False,
             num_workers=self.n_threads,
-            pin_memory=False)
+            pin_memory=True)
         return train_loader, test_loader
 
 

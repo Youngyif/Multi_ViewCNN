@@ -17,7 +17,7 @@ class Focal_ContrastiveLoss(torch.nn.Module):
     Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
     """
 
-    def __init__(self, alpha=0.25, gamma=3, margin=0.2):
+    def __init__(self, alpha=0.25, gamma=1, margin=2):
         super(Focal_ContrastiveLoss, self).__init__()
         self.margin = margin
         self.sigmoid =  nn.Sigmoid()
@@ -31,8 +31,8 @@ class Focal_ContrastiveLoss(torch.nn.Module):
         pt = self.sigmoid (euclidean_distance)
         # loss_contrastive = (self.alpha)*(torch.pow((pt+self.EPS), self.gamma))*(1-label) * torch.pow(euclidean_distance, 2) +\
         #                                            (1-self.alpha)*(torch.pow((1-pt),self.gamma))*(label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2)
-        loss_contrastive = torch.mean((torch.pow((pt+self.EPS), self.gamma))*(1-label) * torch.pow(euclidean_distance, 2) +\
-                                                   (torch.pow((1-pt),self.gamma))*(label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        loss_contrastive = torch.mean(self.alpha*(torch.pow((pt+self.EPS), self.gamma))*(1-label) * torch.pow(euclidean_distance, 2) +\
+                                      (1-self.alpha)*(torch.pow((1-pt),self.gamma))*(label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
 
         return loss_contrastive

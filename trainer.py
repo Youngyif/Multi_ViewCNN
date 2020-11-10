@@ -482,8 +482,8 @@ class Trainer (object):
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
-def generate_factor(T, T_max=200):
-    a = 1*(1-(math.pow(float((T/T_max)),0.5)))
+def generate_factor(T, initv=4, T_max=200, power=2):
+    a = initv*(1-(math.pow(float((T/T_max)),power)))
     # a =
     # a = (math.pow (float ((T / T_max)), 2))
     # a =  (1 - (math.pow (float ((T / T_max)), 2)))
@@ -509,8 +509,8 @@ class Trainer_contra(object):
             self.criterion = nn.CrossEntropyLoss().cuda()
         self.criterion_BCE = nn.BCELoss ().cuda ()
         self.sigmoid = nn.Sigmoid()
-        # self.criterion_contra = Focal_ContrastiveLoss(margin=opt.margin)
-        self.criterion_contra = soft_ContrastiveLoss ()
+        self.criterion_contra = Focal_ContrastiveLoss(margin=opt.margin)
+        # self.criterion_contra = soft_ContrastiveLoss ()
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
@@ -616,21 +616,21 @@ class Trainer_contra(object):
             """
             labels_synechia = generateTarget(dark_input[0], labels)
             reduce_labels_synechia = labels_synechia
-            labels_synechia = labels_synechia.cuda()
+            labels_synechia = labels_synechia.cuda(non_blocking=True)
             labels_var = Variable(labels_synechia)
 
 
-            dark_var = Variable(dark_input[0].cuda())
-            light_var = Variable(light_input[0].cuda())
-            dark_full_var = Variable(dark_input[1].cuda())
-            light_full_var = Variable(light_input[1].cuda())
+            dark_var = Variable(dark_input[0].cuda(non_blocking=True))
+            light_var = Variable(light_input[0].cuda(non_blocking=True))
+            dark_full_var = Variable(dark_input[1].cuda(non_blocking=True))
+            light_full_var = Variable(light_input[1].cuda(non_blocking=True))
             output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)  ##loss0 focal loss1 contra
             prediction = output.data.cpu()
             output_list.append(prediction.numpy())
             label_list.append(reduce_labels_synechia.cpu().numpy())
 
             # loss = loss0+opt.loss_ratio*loss1
-            # loss = self.factor*loss0+ (1-self.factor)*loss1
+            # loss = (1-self.factor)*loss0+ self.factor*loss1 ##增长或减少不太行
             loss = loss0 + self.factor*loss1
             self.backward(loss)
             loss_sum += float(loss.data)
@@ -666,15 +666,15 @@ class Trainer_contra(object):
                 labels_synechia = generateTarget(dark_input[0], labels)
                 reduce_labels_synechia = labels_synechia
 
-                labels_synechia = labels_synechia.cuda()
+                labels_synechia = labels_synechia.cuda(non_blocking=True)
                 labels_var = Variable(labels_synechia)
                 labels_var = Variable(labels_var)
 
 
-                dark_var = Variable(dark_input[0].cuda())
-                light_var = Variable(light_input[0].cuda())
-                dark_full_var = Variable(dark_input[1].cuda())
-                light_full_var = Variable(light_input[1].cuda())
+                dark_var = Variable(dark_input[0].cuda(non_blocking=True))
+                light_var = Variable(light_input[0].cuda(non_blocking=True))
+                dark_full_var = Variable(dark_input[1].cuda(non_blocking=True))
+                light_full_var = Variable(light_input[1].cuda(non_blocking=True))
                 output, loss0, loss1 = self.forward(dark_var, light_var, dark_full_var, light_full_var, labels_var)
                 loss = loss0 + self.factor * loss1
                 # loss = self.factor * loss0 + (1 - self.factor) * loss1

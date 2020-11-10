@@ -399,8 +399,8 @@ class resnet3d(nn.Module):
         if opt.contra_multiscale:
             n=4
         self.fc = nn.Linear (n * 512 * block.expansion, num_classes)
-        if opt.multifuse==True:
-            self.fc = nn.Linear(n*256 * block.expansion, num_classes)
+        # if opt.multifuse==True:
+        #     self.fc = nn.Linear(n*256 * block.expansion, num_classes)
 
         ##### multi scale
         # self.conv11_m = nn.Conv3d(2048, 1024, kernel_size=(1, 1, 1), stride=(1, 1, 1), padding=(0, 0, 0), bias=True)
@@ -437,19 +437,21 @@ class resnet3d(nn.Module):
         #     nn.ReLU (inplace=True),
         #
         #     nn.Linear (500, 5))
+        self.drop = nn.Dropout (0.5)
         self.fc_contra_large_scale = nn.Sequential(
-            nn.Linear(n * 512 * block.expansion, 512),
-            nn.ReLU(inplace=True),
-
-            nn.Linear(512, 256))
+            nn.Linear(n * 512 * block.expansion, 500),
+            # nn.ReLU(inplace=True),
+            nn.Dropout (0.5),
+            # #
+            nn.Linear(500, 21))
 
         self.fc_contra_small_scale = nn.Sequential (
-            nn.Linear (n * 512 * block.expansion, 512),
+            nn.Linear (n * 512 * block.expansion, 500),
             nn.ReLU (inplace=True),
+            nn.Dropout (0.5),
+            # #
+            nn.Linear (500, 21))
 
-            nn.Linear (512, 256))
-
-        self.drop = nn.Dropout(0.5)
         self.sigmoid = nn.Sigmoid()
         # self.extract = ConvBlock(3,3)
         for m in self.modules():
@@ -775,6 +777,7 @@ class resnet3d(nn.Module):
         x = self.avgpool (x)
         h = x
         h = h.view (h.size (0), -1)
+        h=self.drop(h) ###新增 drop
         h = self.fc_contra_small_scale (h)
         h = F.normalize (h, dim=1)
         # x = self.drop (x)
@@ -798,6 +801,7 @@ class resnet3d(nn.Module):
         fullx = self.avgpool (fullx)
         h = fullx
         h = h.view (h.size (0), -1)
+        h=self.drop(h)###新增 drop
         h = self.fc_contra_large_scale (h)
         h = F.normalize (h, dim=1)
 
@@ -848,159 +852,6 @@ class resnet3d(nn.Module):
         return h
 
 
-    def forward_dist_contra(self, x):
-        x_d, x_l = x
-        x_d = self.conv1(x_d)
-        x_d = self.bn1(x_d)
-        x_d = self.relu(x_d)
-        x_d = self.maxpool1(x_d)
-
-        x_d = self.layer1(x_d)
-        x_d = self.maxpool2(x_d)
-        x_d = self.layer2(x_d)
-        x_d = self.layer3(x_d)
-        x_d = self.layer4(x_d)
-        x_d = self.avgpool(x_d)
-        ###get similarity vector
-        x_d = x_d.view(x_d.size(0), -1)
-        x_d = self.fc_dist(x_d)
-
-        ###
-        # x_d = self.drop(x_d)
-
-        x_l = self.conv1(x_l)
-        x_l = self.bn1(x_l)
-        x_l = self.relu(x_l)
-        x_l = self.maxpool1(x_l)
-        x_l = self.layer1(x_l)
-        x_l = self.maxpool2(x_l)
-        x_l = self.layer2(x_l)
-        x_l = self.layer3(x_l)
-        x_l = self.layer4(x_l)
-        x_l = self.avgpool(x_l)
-        ###get similarity vector
-        x_l = x_l.view(x_l.size(0), -1)
-        x_l = self.fc_dist(x_l)
-        size0 = x_l.size()
-        size1 = x_d.size()
-        x_d = self.l2_norm(x_d) *10
-        x_l = self.l2_norm(x_l) *10
-        size2 = x_l.size()
-        size3 = x_d.size()
-        x = torch.cat((x_l,x_d),dim=1)
-        x = x.view (x.shape[0], -1)
-        size = x.size()
-        x = self.dist_classify_fc (x)
-        x = self.sigmoid (x)
-
-        return x_d, x_l, x
-
-    def forward_single_contra_bilinear(self, x):
-        print("bilinear, focal 0.25")
-        x_d, x_l = x
-        # print(x_d.size())
-        x_d = self.conv1(x_d)
-        x_d = self.bn1(x_d)
-        x_d = self.relu(x_d)
-        x_d = self.maxpool1(x_d)
-
-        x_d = self.layer1(x_d)
-        x_d = self.maxpool2(x_d)
-        x_d = self.layer2(x_d)
-        x_d = self.layer3(x_d)
-        x_d = self.layer4(x_d)
-        x_d = self.avgpool(x_d)
-        ###get similarity vector
-        h_d = x_d
-        h_d = h_d.view(h_d.size(0), -1)
-        h_d = self.fc_contra(h_d)
-        h_d = F.normalize(h_d, dim=1)
-        ###
-        x_d = self.drop(x_d)
-        # print(x_d.size())
-        # x_d = x_d.view(x_d.shape[0], -1)
-        # x_d = self.fc_d(x_d)
-
-        x_l = self.conv1(x_l)
-        x_l = self.bn1(x_l)
-        x_l = self.relu(x_l)
-        x_l = self.maxpool1(x_l)
-        x_l = self.layer1(x_l)
-        x_l = self.maxpool2(x_l)
-        x_l = self.layer2(x_l)
-        x_l = self.layer3(x_l)
-        x_l = self.layer4(x_l)
-        x_l = self.avgpool(x_l)
-        ###get similarity vector
-        h_l = x_l
-        h_l = h_l.view(h_l.size(0), -1)
-        sizehl = h_l.size()
-        h_l = self.fc_contra(h_l)
-        h_l = F.normalize(h_l, dim=1)
-        ###
-        print(x_d.size(),x_l.size())
-
-        x_d = x_d.view(x_d.shape[0], -1)
-        x_l = x_l.view(x_l.shape[0], -1)
-        print(x_d.size(), x_l.size())
-        x = self.bilinear(x_l,x_d)
-        # x = torch.cat((x_l,x_d),dim=1)
-
-        # print(x.size())
-        x = self.drop(x)
-        x = x.view(x.shape[0], -1)
-
-        x = self.fc_bi(x)
-        x = self.sigmoid(x)
-        return h_d, h_l, x
-
-    def forward_single_contra_learning(self, x):
-        x_d, x_l = x
-        # print(x_d.size())
-        x_d = self.conv1(x_d)
-        x_d = self.bn1(x_d)
-        x_d = self.relu(x_d)
-        x_d = self.maxpool1(x_d)
-
-        x_d = self.layer1(x_d)
-        x_d = self.maxpool2(x_d)
-        x_d = self.layer2(x_d)
-        x_d = self.layer3(x_d)
-        x_d = self.layer4(x_d)
-        x_d = self.avgpool(x_d)
-        ###get similarity vector
-        h_d = x_d.view(x_d.shape[0], -1)
-        h_d = F.normalize(h_d,dim=1)
-        ###
-        # x_d = self.drop(x_d)
-        # print(x_d.size())
-        # x_d = x_d.view(x_d.shape[0], -1)
-        # x_d = self.fc_d(x_d)
-
-        x_l = self.conv1(x_l)
-        x_l = self.bn1(x_l)
-        x_l = self.relu(x_l)
-        x_l = self.maxpool1(x_l)
-        x_l = self.layer1(x_l)
-        x_l = self.maxpool2(x_l)
-        x_l = self.layer2(x_l)
-        x_l = self.layer3(x_l)
-        x_l = self.layer4(x_l)
-        x_l = self.avgpool(x_l)
-        ###get similarity vector
-        h_l = x_l.view(x_l.shape[0], -1)
-        h_l = F.normalize(h_l, dim=1)
-        ###
-
-
-        # x = torch.cat((x_l,x_d),dim=1)
-        # x = self.drop(x)
-        # x = x.view(x.shape[0], -1)
-        # #
-        # x = self.fc(x)
-        # x = self.sigmoid(x)
-        return h_d, h_l
-        # return x
     def forward_multi(self, x):
         clip_preds = []
         for clip_idx in range(x.shape[1]):  # B, 10, 3, 3, 32, 224, 224

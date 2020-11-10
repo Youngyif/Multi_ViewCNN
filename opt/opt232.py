@@ -61,12 +61,12 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "overtrain_resnet3d_gamma1_modified_circleloss_cosine128__reduce_ratio=1_115"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "dropoutcontramodule_resnet3d_alpha0.25_gamma1_m1_focal_contra_reduce_ratio=4_119"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
-        self.margin = 2
-        self.loss_ratio=0.1
+        self.margin = 1
+        self.loss_ratio = 0.1
 
         ##don't fuse
         self.multifuse = False
