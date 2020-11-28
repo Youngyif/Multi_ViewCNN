@@ -5,7 +5,7 @@ from termcolor import colored
 import torch.backends.cudnn as cudnn
 from saveModel.checkpoint import *
 from trainer import *
-
+from saveModel.save_hyperparameter import *
 
 def dataparallel(model, ngpus, gpu0=0):
     if ngpus == 0:
@@ -41,8 +41,10 @@ def main(net_opt=None):
     apt-get install graphviz
     pip install pydot termcolor"""
     CUDA_VISIBLE_DEVICES = 0, 1, 2, 3
-    start_time = time.time ()
     opt = net_opt or NetOption ()
+
+    start_time = time.time ()
+
     print(opt.GPU)
     # set torch seed
     # init random seed

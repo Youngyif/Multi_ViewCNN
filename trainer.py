@@ -13,11 +13,12 @@ import pandas as pd
 import collections
 import matplotlib.pyplot as plt
 from models.contrastiveLoss import *
-
+from saveModel.save_hyperparameter import *
 # from models.nt_xent  import *
 from models.Focal_loss_sigmoid  import *
 from models.focal_contrastive_Loss import *
 from models.soft_contrastiveloss import *
+from  models.contrastiveLoss import *
 # from models.utiils import PairwiseDistance
 
 single_train_time = 0
@@ -475,22 +476,19 @@ class Trainer (object):
                              # loss.data[0], mode="Test")
                              loss.data, mode="Test")
 
-        # loss_sum /= iters
+
         auc, fpr, tpr = computeAUC (output_list, label_list, epoch)
         acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist = computeEval (output_list, label_list, pathlist)
         print ("|===>Testing AUC: %.4f Loss: %.4f acc: %.4f precision: %.4f recall: %.4f f1: %.4f gmean: %.4f" % (
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
-def generate_factor(T, initv=4, T_max=200, power=2):
+def generate_factor(save, T, initv=1, T_max=200, power=2):
+    if T==1:
+        save.write_to_dict("init_value_cumulative", initv)
+        save.write_to_dict ("power_cumulative", power)
     a = initv*(1-(math.pow(float((T/T_max)),power)))
-    # a =
-    # a = (math.pow (float ((T / T_max)), 2))
-    # a =  (1 - (math.pow (float ((T / T_max)), 2)))
-    # a = 1-float(T/T_max)
-    # a = float (T / T_max)
-    # print(a)
-    # a=1
+    # a=0.1
     return a
 
 class Trainer_contra(object):
@@ -499,6 +497,7 @@ class Trainer_contra(object):
 
     def __init__(self, model, opt, optimizer=None):
         self.opt = opt
+        self.save_hyper = save_hyperparameter (opt.save_head_path + opt.save_path)
         # self.l2_dist = PairwiseDistance (2)
         self.criterion_focal = FocalLoss(alpha=0.75, gamma=2) ###记得改回来
         self.model = model
@@ -509,8 +508,9 @@ class Trainer_contra(object):
             self.criterion = nn.CrossEntropyLoss().cuda()
         self.criterion_BCE = nn.BCELoss ().cuda ()
         self.sigmoid = nn.Sigmoid()
-        self.criterion_contra = Focal_ContrastiveLoss(margin=opt.margin)
-        # self.criterion_contra = soft_ContrastiveLoss ()
+        self.criterion_contra = Focal_ContrastiveLoss( save_hyper = self.save_hyper)
+        # self.criterion_contra = soft_ContrastiveLoss (save_hyper = self.save_hyper)
+        # self.criterion_contra = ContrastiveLoss( save_hyper = self.save_hyper, margin=opt.margin)
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
@@ -551,14 +551,14 @@ class Trainer_contra(object):
         predict = self.model(Pair)  #h_d, h_l, x
         if opt.contra_multiscale:
             h_full_d, h_full_l, h_d, h_l, x = predict["h_full_d"], predict["h_full_l"], predict["h_d"], predict["h_l"], predict["x"]
-            labels_contra = self.custom_replace (labels_var, 1., 0.)
+            # labels_contra = self.custom_replace (labels_var, 1., 0.)
             if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
                 # print("before bce loss", x)
                 loss0 = self.criterion_focal (x, labels_var)
 
-                loss1 = self.criterion_contra (h_d, h_l, labels_contra) + 0.5 * self.criterion_contra (h_full_d,
+                loss1 = self.criterion_contra (h_d, h_l, labels_var) + 0.5 * self.criterion_contra (h_full_d,
                                                                                                        h_full_l,
-                                                                                                       labels_contra)
+                                                                                                       labels_var)
                 # print(loss0, loss1)
                 # loss1 = self.criterion_contra(h_d, h_l, labels_var)
                 # loss = loss0+0.1*loss1
@@ -568,15 +568,11 @@ class Trainer_contra(object):
             return x, loss0, loss1
         else:
             h_d, h_l, x = predict
-            labels_contra = self.custom_replace (labels_var, 1., 0.)
+            # labels_contra = self.custom_replace (labels_var, 1., 0.)
             if labels_var is not None:  ##(x, x_structure)  labelopennarrow, labelsyne
-                # print("before bce loss", x)
                 loss0 = self.criterion_focal (x, labels_var)
-                # print("after loss0", loss0)
-                loss1 = self.criterion_contra (h_d, h_l, labels_contra)
+                loss1 = self.criterion_contra (h_d, h_l, labels_var)
 
-                # loss1 = self.criterion_contra(h_d, h_l, labels_var)
-                # loss = loss0+0.1*loss1
             else:
                 loss = None
             # print("0.1")
@@ -602,7 +598,7 @@ class Trainer_contra(object):
 
         start_time = time.time()
         end_time = start_time
-        self.factor = generate_factor(T = epoch)
+        self.factor = generate_factor(save=self.save_hyper, T = epoch)
         # self.marginratio = generate_margin(T, T_max)
         # self.criterion_contra.change_margin(T=epoch, T_max=opt.nEpochs)
         print("training", self.factor)
@@ -645,6 +641,9 @@ class Trainer_contra(object):
         loss_sum /= iters
         auc, fpr, tpr = computeAUC(output_list, label_list, epoch)
         print("|===>Training AUC: %.4f Loss: %.4f " % (auc, loss_sum))
+        if not os.path.exists(os.path.join(opt.save_head_path, opt.save_path, "model/","hyperparameter.json")):
+            print("save hyperparameter")
+            self.save_hyper.dump()  ##保存超参
         return auc, loss_sum
 
     def test(self, epoch, test_loader):

@@ -165,9 +165,9 @@ class DataLoader (object):
             train_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/overtrain_shuffle.txt"##fix version 0430
             test_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/valv5.txt"##0413##fix version 0430
         if opt.dataset == "BJ":
-            train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
+            train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
             # train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"
-            test_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/test_bj.txt"  ##BJ TEST
+            test_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/test_bj.txt"  ##BJ TEST
 
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])

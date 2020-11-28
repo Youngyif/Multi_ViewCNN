@@ -17,6 +17,13 @@
             </list>
           </settings>
         </remote-mappings>
+        <remote-mappings server-id="python@sftp://yangyifan@222.201.187.246:22/mnt/cephfs/home/yangyifan/yangyifan/miniconda3/bin/python3.8">
+          <settings>
+            <list>
+              <mapping local-root="$PROJECT_DIR$" remote-root="/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN" />
+            </list>
+          </settings>
+        </remote-mappings>
       </list>
     </list>
   </component>

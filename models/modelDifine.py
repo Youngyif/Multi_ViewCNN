@@ -10,9 +10,6 @@ from opt.opt232 import *
 from torch.autograd import Variable
 from models.box_filter import BoxFilter
 import numpy as np
-from torchsummary import summary
-from ops.basic_ops import ConsensusModule
-from ops.transforms import *
 from torch.nn.init import normal_, constant_
 
 opt = NetOption()
@@ -440,15 +437,13 @@ class resnet3d(nn.Module):
         self.drop = nn.Dropout (0.5)
         self.fc_contra_large_scale = nn.Sequential(
             nn.Linear(n * 512 * block.expansion, 500),
-            # nn.ReLU(inplace=True),
-            nn.Dropout (0.5),
+            nn.ReLU(inplace=True),
             # #
             nn.Linear(500, 21))
 
         self.fc_contra_small_scale = nn.Sequential (
             nn.Linear (n * 512 * block.expansion, 500),
             nn.ReLU (inplace=True),
-            nn.Dropout (0.5),
             # #
             nn.Linear (500, 21))
 
@@ -753,7 +748,7 @@ class resnet3d(nn.Module):
         h_l = self.contra_module(h_l, flag=4)
 
         x = torch.cat((x_l,x_d),dim=1)
-        x = self.drop(x)
+        # x = self.drop(x)
         x = x.view(x.shape[0], -1)
 
         x = self.fc(x)
@@ -777,7 +772,7 @@ class resnet3d(nn.Module):
         x = self.avgpool (x)
         h = x
         h = h.view (h.size (0), -1)
-        h=self.drop(h) ###新增 drop
+        # h=self.drop(h) ###新增 drop
         h = self.fc_contra_small_scale (h)
         h = F.normalize (h, dim=1)
         # x = self.drop (x)
