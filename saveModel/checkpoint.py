@@ -15,7 +15,7 @@ model.load_state_dict(torch.load("params.pkl"))
 class CheckPoint(object):
     def __init__(self, opt):
         self.resume = opt.resume
-        self.nGPU = opt.nGPU
+        self.nGPU = len(opt.gpulist)
         self.resumeEpoch = opt.resumeEpoch
         self.retrain = opt.retrain
         self.save_path = opt.save_head_path+opt.save_path+"model/"

@@ -7,6 +7,7 @@ import torch.nn as nn
 import torchvision.models as models
 import torch.nn.functional as F
 from opt.opt232 import *
+# from opt.opt import *
 from torch.autograd import Variable
 from models.box_filter import BoxFilter
 import numpy as np
@@ -869,33 +870,33 @@ class resnet3d(nn.Module):
         ms_x = (x_d, x_l, fullx_d, fullx_l)
         batch = {'frames1': ms_x} ##0 dark 1 light
         # 5D tensor == single clip
-        if opt.multiway_contra == True:
-            pred = self.forward_multiway_contra (batch['frames'])
-        if opt.contra_focal_bilinear ==True:
-            pred = self.forward_single_contra_bilinear(batch['frames'])
-        if opt.contra_single == True:
-            # pred = self.forward_single_contra(batch['frames'])
-            # print("batchsize",batch['frames'][0].size())
-            pred = self.forward_single(batch['frames'][0]) ##0 dark 1 light
-        if opt.contra_learning == True:
-            pred = self.forward_single_contra_learning(batch['frames'])
-        if opt.contra_learning_2 == True:
-            print("contra_learning")
-            pred = self.forward_contra_learning_2(batch['frames'])
+        # if opt.multiway_contra == True:
+        #     pred = self.forward_multiway_contra (batch['frames'])
+        # if opt.contra_focal_bilinear ==True:
+        #     pred = self.forward_single_contra_bilinear(batch['frames'])
+        # if opt.contra_single == True:
+        #     # pred = self.forward_single_contra(batch['frames'])
+        #     # print("batchsize",batch['frames'][0].size())
+        #     pred = self.forward_single(batch['frames'][0]) ##0 dark 1 light
+        # if opt.contra_learning == True:
+        #     pred = self.forward_single_contra_learning(batch['frames'])
+        # if opt.contra_learning_2 == True:
+        #     print("contra_learning")
+        #     pred = self.forward_contra_learning_2(batch['frames'])
         if opt.mscale == True:
             # print("multiscale cat")
             pred = self.forward_single_mscale_single(batch['frames1'])
             # pred = self.forward_single_mscale(batch['frames1'])
-        if opt.cat == True:
-            # if batch['frames'].dim() == 5:
-            # print("catmodel")
-            pred = self.forward_single_cat(batch['frames'])
-        if  opt.contra_multiscale and opt.contra_focal:
-            # print("multiscal_contra")
-            pred = self.forward_single_mscale_single(batch['frames1'])
-        if  not opt.contra_multiscale and opt.contra_focal:
-            # print("multiscal_contra")
-            pred = self.forward_single_contra(batch['frames1'])
+        # if opt.cat == True:
+        #     # if batch['frames'].dim() == 5:
+        #     # print("catmodel")
+        #     pred = self.forward_single_cat(batch['frames'])
+        # if  opt.contra_multiscale and opt.contra_focal:
+        #     # print("multiscal_contra")
+        #     pred = self.forward_single_mscale_single(batch['frames1'])
+        # if  not opt.contra_multiscale and opt.contra_focal:
+        #     # print("multiscal_contra")
+        #     pred = self.forward_single_contra(batch['frames1'])
 
         return pred
 

@@ -18,8 +18,9 @@ class NetOption (object):
         self.data_set = "asoct"  # options: asoct
         self.disease_type = 1  # 1(open) | 2(narrow) | 3(close) | 4(unclassify)  or  1(open) | 2(narrow/close)
         self.manualSeed = 1  # manually set RNG seed
-        self.nGPU = 2  # number of GPUs to use by default
-        self.GPU =6# default gpu to use, options: range(nGPU)
+        # self.nGPU = 2  # number of GPUs to use by default
+        # self.GPU =6# default gpu to use, options: range(nGPU)
+        self.gpulist=[2,3]
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
@@ -44,7 +45,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         # self.cat = True
         self.cat = False
-        self.mscale = False
+        self.mscale = True
         self.structure = False
         self.attention = False
         self.contra = False
@@ -61,7 +62,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "squeeze_resnet3d_alpha0.25_margin2_featuredim=21_addpositivemargin_scale=2_gamma2_focal_#real#contra_reduce=1_1128"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "squeeze_resnet3d_s16m2g2a0.5#mining_margin0.8#_margin2_featuredim=21_focal_reduce_reducepower=0.5_124"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10

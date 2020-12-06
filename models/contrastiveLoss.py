@@ -20,9 +20,14 @@ class ContrastiveLoss(torch.nn.Module):
 
     def forward(self, output1, output2, label):
         euclidean_distance = F.pairwise_distance(output1, output2, keepdim = True)
-
-        loss_contrastive = torch.mean((1-label) * torch.pow(euclidean_distance-self.margin, 2) +
-                                      (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+        # print(label)
+        # print("before squeeze",euclidean_distance)
+        euclidean_distance = euclidean_distance.squeeze (1)
+        # print("after squeeze",euclidean_distance)
+        # a=(1-label) * torch.pow(euclidean_distance-self.margin, 2)
+        # print("a",a)
+        loss_contrastive = torch.mean((label) * torch.pow(euclidean_distance-self.margin_sim, 2) +
+                                      (1-label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
 
 
         return loss_contrastive

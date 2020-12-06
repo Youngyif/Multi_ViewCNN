@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="232">
+  <component name="PublishConfigData" autoUpload="Always" serverName="yangyifan@222.201.187.247:22">
     <serverData>
       <paths name="232">
         <serverdata>
@@ -9,10 +9,17 @@
           </mappings>
         </serverdata>
       </paths>
-      <paths name="yangyifan@222.201.187.232:22">
+      <paths name="246DCL">
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="247 bigdataset">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

@@ -20,8 +20,8 @@ class Visualization(object):
             os.remove(self.log_file)
         if os.path.isfile(self.readme):
             os.remove(self.readme)
-        if not os.path.isdir(self.code_path):
-            os.mkdir(self.code_path)
+        # if not os.path.isdir(self.code_path):
+        #     os.mkdir(self.code_path)
         self.copy_code(dst=self.code_path)
         """if os.path.isdir(self.weight_folder):
             shutil.rmtree(self.weight_folder, ignore_errors=True)
@@ -47,18 +47,18 @@ class Visualization(object):
     #                 print ("copy file error")
 
     def copy_code(self, src="./", dst="./code/"):##可以拷贝子文件夹中的代码
-        L = []
-        for dirpath, dirnames, filenames in os.walk(src):
-            for file in filenames:
-                if os.path.splitext(file)[1] == '.py':
-                    L.append(dirpath + "/" + file)
-
-        for path in L:
-            try:
-                shutil.copyfile(src=path, dst=dst + path.split("/")[-1])
-            except:
-                print("copy file error")
-
+        # L = []
+        # for dirpath, dirnames, filenames in os.walk(src):
+        #     for file in filenames:
+        #         if os.path.splitext(file)[1] == '.py':
+        #             L.append(dirpath + "/" + file)
+        # 
+        # for path in L:
+        #     try:
+        #         shutil.copyfile(src=path, dst=dst + path.split("/")[-1])
+        #     except:
+        #         print("copy file error")
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns('*.pyc', '.csv', '.txt','.json', '.jsonl','log'))
     def writeopt(self, opt):
         with open(self.opt_file, "w") as f:
             for k, v in opt.__dict__.items():

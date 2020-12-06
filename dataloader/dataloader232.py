@@ -162,8 +162,8 @@ class DataLoader (object):
     def asoct_data(self, data_path, label_path, rootpath):
         imgSize = opt.imgsize
         if opt.dataset=="internal":
-            train_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/overtrain_shuffle.txt"##fix version 0430
-            test_dir = "/home/yangyifan/code/multi_view_0812/dataProcess/trainvalpath/valv5.txt"##0413##fix version 0430
+            train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/oversampling/overtrain_shuffle.txt"##fix version 0430
+            test_dir = "/mnt/cephfs/home/yangyifan/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/valv5.txt"##0413##fix version 0430
         if opt.dataset == "BJ":
             train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
             # train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"

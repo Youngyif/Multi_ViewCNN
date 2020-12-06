@@ -1,4 +1,5 @@
 from opt.opt232 import *
+# from opt.opt import *
 from dataloader.dataloader232 import *
 from visualization import *
 from termcolor import colored
@@ -7,10 +8,12 @@ from saveModel.checkpoint import *
 from trainer import *
 from saveModel.save_hyperparameter import *
 
-def dataparallel(model, ngpus, gpu0=0):
+def dataparallel(model, gpulist):
+    ngpus=len(gpulist)
     if ngpus == 0:
         assert False, "only support gpu mode"
-    gpu_list = list (range (gpu0, gpu0 + ngpus))
+    # gpu_list = list (range (gpu0, gpu0 + ngpus))
+    gpu_list=gpulist
     # assert torch.cuda.device_count() >= gpu0+ngpus, "Invalid Number of GPUs"
     if isinstance (model, list):
         for i in range (len (model)):
@@ -40,22 +43,28 @@ def main(net_opt=None):
     """requirements:
     apt-get install graphviz
     pip install pydot termcolor"""
-    CUDA_VISIBLE_DEVICES = 0, 1, 2, 3
     opt = net_opt or NetOption ()
 
     start_time = time.time ()
 
-    print(opt.GPU)
+    # print(opt.GPU)
     # set torch seed
     # init random seed
     torch.manual_seed (opt.manualSeed)
     torch.cuda.manual_seed (opt.manualSeed)
     cudnn.benchmark = True
-    if opt.nGPU == 1 and torch.cuda.device_count () >= 1:
-        assert opt.GPU <= torch.cuda.device_count () - 1, "Invalid GPU ID"
-        torch.cuda.set_device (opt.GPU)
+    # if opt.nGPU == 1 and torch.cuda.device_count () >= 1:
+    #     assert opt.GPU <= torch.cuda.device_count () - 1, "Invalid GPU ID"
+    #     torch.cuda.set_device (opt.GPU)
+    # else:
+    #     torch.cuda.set_device (opt.GPU)
+
+    if len(opt.gpulist) == 1 and torch.cuda.device_count () >= 1:
+        assert opt.opt.gpulist[0] <= torch.cuda.device_count () - 1, "Invalid GPU ID"
+        torch.cuda.set_device (opt.gpulist[0])
     else:
-        torch.cuda.set_device (opt.GPU)
+        torch.cuda.set_device (opt.gpulist[0])
+
 
     # create data loader
     data_loader = DataLoader (dataset=opt.data_set, data_path=opt.data_path, label_path=opt.label_path,
@@ -161,20 +170,21 @@ def main(net_opt=None):
             pretrained_dict = {k: v for k, v in state_dict.items() if k not in ["fc.bias", 'fc.weight']}
             mydict.update(pretrained_dict)
             pretrained_dict_m = {}
-            print ("loading for large module")
-            for k, v in state_dict.items ():
-                if k in ["fc.bias", 'fc.weight']:
-                    continue
-                splits = k.split (".")
-                splits[0] = splits[0] + "_m"
-                pretrained_dict_m[".".join (splits)] = v
+            # print ("loading for large module")
+            # for k, v in state_dict.items ():
+            #     if k in ["fc.bias", 'fc.weight']:
+            #         continue
+            #     splits = k.split (".")
+            #     splits[0] = splits[0] + "_m"
+            #     pretrained_dict_m[".".join (splits)] = v
             # mydict.update (pretrained_dict_m)
             # print(mydict)
             model.load_state_dict(mydict)
 
 
     # return
-    model = dataparallel (model, opt.nGPU, opt.GPU)
+    # model = dataparallel (model, opt.nGPU, opt.GPU)
+    model = dataparallel (model, opt.gpulist)
     # trainer = Trainer(model=model, opt=opt, optimizer=optimizer)
     trainer = Trainer_contra(model=model, opt=opt, optimizer=optimizer)
     print ("|===>Create trainer")
@@ -194,7 +204,7 @@ def main(net_opt=None):
             epoch=epoch, train_loader=train_loader)
         test_auc, test_loss, test_acc, test_precision, test_recall, test_f1, test_gmean, tn, fp, fn, tp, wronglist= trainer.test (
             epoch=epoch, test_loader=test_loader)
-
+        print("train_loss", train_loss)
         # write and print result
         log_str = "%d\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%.4f\t%d\t%d\t%d\t%d\t" % (
         epoch, train_auc, train_loss, test_auc,

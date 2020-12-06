@@ -483,12 +483,22 @@ class Trainer (object):
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
-def generate_factor(save, T, initv=1, T_max=200, power=2):
+def generate_factor(save, T, initv=1, T_max=200, power=0.5):
     if T==1:
         save.write_to_dict("init_value_cumulative", initv)
         save.write_to_dict ("power_cumulative", power)
     a = initv*(1-(math.pow(float((T/T_max)),power)))
-    # a=0.1
+    # a=1
+    # if T<=25:
+    #     a=1
+    # elif T>25 and T<=50:
+    #     a=0.8
+    # elif T>50 and T<=75:
+    #     a=0.6
+    # elif T>75 and T<=100:
+    #     a=0.4
+    # elif T>100 :
+    # a=1
     return a
 
 class Trainer_contra(object):
@@ -510,7 +520,7 @@ class Trainer_contra(object):
         self.sigmoid = nn.Sigmoid()
         self.criterion_contra = Focal_ContrastiveLoss( save_hyper = self.save_hyper)
         # self.criterion_contra = soft_ContrastiveLoss (save_hyper = self.save_hyper)
-        # self.criterion_contra = ContrastiveLoss( save_hyper = self.save_hyper, margin=opt.margin)
+        # self.criterion_contra = ContrastiveLoss( save_hyper = self.save_hyper)
         self.lr = self.opt.LR
         # self.optimzer = optimizer or torch.optim.RMSprop(self.model.parameters(),
         #                                              lr=self.lr,
