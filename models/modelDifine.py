@@ -34,7 +34,7 @@ class my_svcnn(nn.Module):
         self.net2 = nn.Sequential(*list(self.net.children())[1:-1])
         self.num_views = num_views
         self.net_2 = nn.Linear(512,1)
-        # torch.nn.init.xavier_uniform(self.net_2.weight)  ##xavier 初始化参数
+        # torch.nn.init.xavier_uniform(self.net_2.weight)  ##xavier 鍒濆鍖栧弬鏁?
         self.sigmoid = nn.Sigmoid()
         self.dropout = nn.Dropout(0.5)
     def forward(self, x):  ##x[0] is dark x[1] is light
@@ -54,7 +54,7 @@ class my_mvcnn(nn.Module):
         self.net2 = nn.Sequential(*list(self.net.children())[1:-1])
         self.num_views = num_views
         self.net_2 = nn.Linear(512,1)
-        # torch.nn.init.xavier_uniform(self.net_2.weight)  ##xavier 初始化参数
+        # torch.nn.init.xavier_uniform(self.net_2.weight)  ##xavier 鍒濆鍖栧弬鏁?
         self.sigmoid = nn.Sigmoid()
         self.dropout = nn.Dropout(0.5)
         # self.net = load_models(my_mvcnn, self.pretrainpath)
@@ -387,15 +387,7 @@ class resnet3d(nn.Module):
                                        temp_stride=[1, 1, 1, 1, 1, 1], nonlocal_mod=nonlocal_mod)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2, temp_conv=[0, 1, 0], temp_stride=[1, 1, 1])
         self.avgpool = nn.AdaptiveAvgPool3d((1, 1, 1))
-        n=1
-        if opt.cat ==True:
-            n=1
-        if opt.contra or opt.contra_focal == True or opt.contra_focal_bilinear == True :
-            n=2
-        if opt.contra_single==True:
-            n=1
-        if opt.contra_multiscale:
-            n=4
+        n=2
         self.fc = nn.Linear (n * 512 * block.expansion, num_classes)
         # if opt.multifuse==True:
         #     self.fc = nn.Linear(n*256 * block.expansion, num_classes)
@@ -773,7 +765,7 @@ class resnet3d(nn.Module):
         x = self.avgpool (x)
         h = x
         h = h.view (h.size (0), -1)
-        # h=self.drop(h) ###新增 drop
+        # h=self.drop(h) ###鏂板 drop
         h = self.fc_contra_small_scale (h)
         h = F.normalize (h, dim=1)
         # x = self.drop (x)
@@ -797,7 +789,7 @@ class resnet3d(nn.Module):
         fullx = self.avgpool (fullx)
         h = fullx
         h = h.view (h.size (0), -1)
-        h=self.drop(h)###新增 drop
+        h=self.drop(h)###鏂板 drop
         h = self.fc_contra_large_scale (h)
         h = F.normalize (h, dim=1)
 
@@ -832,6 +824,20 @@ class resnet3d(nn.Module):
         # x = (x+full_x)/2
 
         return {"h_full_d": h_full_d, "h_full_l": h_full_l, "h_d": h_d, "h_l": h_l,"x": x}
+
+    def forward_no_zoomin(self, input):
+        x_d, x_l, fullx_d, fullx_l = input
+        h_full_d, x_full_d = self.forward_smallscale (fullx_d)
+        h_full_l, x_full_l = self.forward_smallscale (fullx_l)
+        full_x = torch.cat((x_full_d, x_full_l),dim=1)
+        x = self.drop (full_x)
+
+        x = x.view (x.shape[0], -1)
+        x = self.fc (x)
+        x = self.sigmoid (x)
+        # x = (x+full_x)/2
+
+        return {"h_full_d": h_full_d, "h_full_l": h_full_l, "h_d": None, "h_l": None,"x": x}
 
     def contra_module(self, x, flag):
         h = x
@@ -883,10 +889,12 @@ class resnet3d(nn.Module):
         # if opt.contra_learning_2 == True:
         #     print("contra_learning")
         #     pred = self.forward_contra_learning_2(batch['frames'])
-        if opt.mscale == True:###what is that
-            # print("multiscale cat")
-            pred = self.forward_single_mscale_single(batch['frames1'])
-            # pred = self.forward_single_mscale(batch['frames1'])
+        # if opt.mscale == True:
+        #     # print("multiscale cat")
+        #     pred = self.forward_single_mscale_single(batch['frames1'])
+        #     # pred = self.forward_single_mscale(batch['frames1'])
+        if opt.no_zoom_in==True:
+            pred = self.forward_no_zoomin (batch['frames1'])
         # if opt.cat == True:
         #     # if batch['frames'].dim() == 5:
         #     # print("catmodel")
@@ -986,7 +994,7 @@ class FastGuidedFilter_attention(nn.Module):
         return (mean_A*hr_x+mean_b).float()
 
 
-class GridAttentionBlock(nn.Module):###attention 模块
+class GridAttentionBlock(nn.Module):###attention 妯″潡
     def __init__(self, in_channels):
         super(GridAttentionBlock, self).__init__()
 
@@ -2078,7 +2086,7 @@ class InceptionI3d (nn.Module):
         #     lam = np.random.beta(opt.alpha, opt.alpha)
         #     x = lam*x_l+(1.-lam)*x_l
         # elif opt.singleinput:
-        #     x = x_l##仅仅使用x_l 的信息
+        #     x = x_l##浠呬粎浣跨敤x_l 鐨勪俊鎭?
 
         x = torch.cat ((x_l, x_d), dim=1)
         x = self.conv11 (x)
@@ -2177,7 +2185,7 @@ class InceptionI3d (nn.Module):
         return self.avg_pool (x)
 
 
-class ConvBlock(nn.Module):  ###结构提取代码
+class ConvBlock(nn.Module):  ###缁撴瀯鎻愬彇浠ｇ爜
     def __init__(self, n_in=64, n_out=3):
         super(ConvBlock, self).__init__()
 
