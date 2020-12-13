@@ -6,6 +6,7 @@ from termcolor import colored
 import torch.backends.cudnn as cudnn
 from saveModel.checkpoint import *
 from trainer import *
+from parser import *
 from saveModel.save_hyperparameter import *
 
 def dataparallel(model, gpulist):
@@ -43,6 +44,7 @@ def main(net_opt=None):
     """requirements:
     apt-get install graphviz
     pip install pydot termcolor"""
+
     opt = net_opt or NetOption ()
 
     start_time = time.time ()
@@ -122,7 +124,7 @@ def main(net_opt=None):
             # model.load_state_dict(torch.load("/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/c3d.pickle"))
             mydict = model.state_dict()
             # print(mydict)
-            state_dict = torch.load("/home/yangyifan/code/multiViewCNN/pretrained/weights/rgb_imagenet.pt", map_location=torch.device('cpu'))
+            state_dict = torch.load("/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/pretrained/weights/rgb_imagenet.pt", map_location=torch.device('cpu'))
             pretrained_dict_l={}
             print("loading for large module")
             for k, v in state_dict.items ():
@@ -140,7 +142,7 @@ def main(net_opt=None):
             model.replace_logits(1)
     if opt.netType == "S3D":
         model = S3D(opt.numclass)
-        file_weight = "/home/yangyifan/code/multiViewCNN/nvcnn_baseline/weights/S3D_kinetics400.pt"
+        file_weight = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/pretrained/weights/S3D_kinetics400.pt"
         weight_dict = torch.load(file_weight)
         model_dict = model.state_dict()
         for name, param in weight_dict.items():

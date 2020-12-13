@@ -20,14 +20,14 @@ class NetOption (object):
         self.manualSeed = 1  # manually set RNG seed
         # self.nGPU = 2  # number of GPUs to use by default
         # self.GPU =6# default gpu to use, options: range(nGPU)
-        self.gpulist=[2,3]
+        self.gpulist=[6,7]
         self.datasetRatio = 1.0  # greedy increasing training data for cifar10
         self.numclass = 1
         # ------------- Data options ------------------------------------------
         self.nThreads = 10  # number of data loader threads
         self.dataset = "BJ"   # BJ | internal
         # self.typedata = "dark" #dark | light
-        self.imgsize = 244
+        self.imgsize = 224
         # ------------- Training options --------------------------------------
         self.testOnly = False  # run on validation set only
         self.tenCrop = False  # Ten-crop testing
@@ -45,7 +45,8 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         # self.cat = True
         self.cat = False
-        self.mscale = True
+        self.mscale = False
+        self.no_zoom_in = True
         self.structure = False
         self.attention = False
         self.contra = False
@@ -56,13 +57,13 @@ class NetOption (object):
         self.contra_single = False
         self.contra_learning = False
         self.contra_learning_2 = False
-        self.contra_multiscale = True
+        self.contra_multiscale = False
         ###--draw Roc---###
         self.draw_ROC = False
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "squeeze_resnet3d_s16m2g2a0.5#mining_margin0.8#_margin2_featuredim=21_focal_reduce_reducepower=0.5_124"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "resnet3d_without_zoomin#scale=16#_reducepower=1_129"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10
@@ -102,9 +103,9 @@ class NetOption (object):
         self.paramscheck ()
 
     def paramscheck(self):
-        self.save_path = "log_%s_%s_%d_%s_bs%d_%s/" % \
-                         (self.data_set, self.netType,
-                          self.depth, self.trainingType, self.batchSize, self.experimentID)
+        self.save_path = "%s_%s/" % \
+                         (self.netType
+                         , self.experimentID)
         if self.data_set == 'asoct':
             if self.trainingType == 'onevsall':
                 self.nClasses = 1

@@ -1,14 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="yangyifan@222.201.187.247:22">
+  <component name="PublishConfigData" autoUpload="Always">
     <serverData>
-      <paths name="232">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/home/yangyifan/code/multiViewCNN/Multi_ViewCNN" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
       <paths name="246DCL">
         <serverdata>
           <mappings>

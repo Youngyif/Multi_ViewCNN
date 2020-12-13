@@ -883,7 +883,7 @@ class resnet3d(nn.Module):
         # if opt.contra_learning_2 == True:
         #     print("contra_learning")
         #     pred = self.forward_contra_learning_2(batch['frames'])
-        if opt.mscale == True:
+        if opt.mscale == True:###what is that
             # print("multiscale cat")
             pred = self.forward_single_mscale_single(batch['frames1'])
             # pred = self.forward_single_mscale(batch['frames1'])
@@ -1331,42 +1331,95 @@ class S3D (nn.Module):
             Mixed_5b (),
             Mixed_5c (),
         )
+        self.base_m = nn.Sequential (
+            SepConv3d (3, 64, kernel_size=7, stride=2, padding=3),
+            nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+            BasicConv3d (64, 64, kernel_size=1, stride=1),
+            SepConv3d (64, 192, kernel_size=3, stride=1, padding=1),
+            nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+            Mixed_3b (),
+            Mixed_3c (),
+            nn.MaxPool3d (kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+            Mixed_4b (),
+            Mixed_4c (),
+            Mixed_4d (),
+            Mixed_4e (),
+            Mixed_4f (),
+            nn.MaxPool3d (kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=(0, 0, 0)),
+            Mixed_5b (),
+            Mixed_5c (),
+        )
         n = 2048
-        self.fc_contra = nn.Sequential (
+        self.fc_contra_m = nn.Sequential (
             nn.Linear (n, 500),
             nn.ReLU (inplace=True),
 
-            nn.Linear (500, 500),
+            nn.Linear (500, 21))
+        self.fc_contra= nn.Sequential (
+            nn.Linear (n, 500),
             nn.ReLU (inplace=True),
 
-            nn.Linear (500, 5))
+            nn.Linear (500, 21))
         self.fc = nn.Sequential (nn.Conv3d (1024, num_class, kernel_size=1, stride=1, bias=True), )
         self.fc_2 = nn.Sequential (nn.Conv3d (2048, num_class, kernel_size=1, stride=1, bias=True), )
-    def forward_single(self, x):
+    # def forward_single(self, x):
+    #     y = self.base (x)
+    #     print("xsize",y.size())
+    #     y = F.avg_pool3d (y, (2, y.size (3), y.size (4)), stride=1)
+    #     print ("xsize", y.size ())
+    #     y = self.fc (y)
+    #     print("899", y.size())
+    #     y = y.view (y.size (0), y.size (1), y.size (2))
+    #     print("901", y.size(), y)
+    #     logits = torch.mean (y, 2)
+    #
+    #     logits = self.sigmoid (logits)
+    #     print("903", logits.size())
+    #     return logits
+    # def forward_single_scale(self, x): ##forward contra org branch
+    #     x_d,x_l = x[0],x[1]
+    #     y_d = self.base (x_d)
+    #     y_d = F.avg_pool3d (y_d, (2, y_d.size (3), y_d.size (4)), stride=1)
+    #     h_d = self.fc_contra(y_d.view(y_d.size(0),-1))
+    #     y_l = self.base (x_l)
+    #     y_l = F.avg_pool3d (y_l, (2, y_l.size (3), y_l.size (4)), stride=1)
+    #     h_l = self.fc_contra (y_l.view (y_l.size (0), -1))
+    #
+    #     y = torch.cat((y_d, y_l),dim=1)
+    #
+    #     y = self.fc_2 (y)
+    #
+    #     y = y.view (y.size (0), y.size (1), y.size (2))
+    #
+    #     logits = torch.mean (y, 2)
+    #
+    #     logits = self.sigmoid (logits)
+    #
+    #     return h_d, h_l, logits
+
+
+    def forward_single_light_small(self, x):
         y = self.base (x)
-        print("xsize",y.size())
         y = F.avg_pool3d (y, (2, y.size (3), y.size (4)), stride=1)
-        print ("xsize", y.size ())
-        y = self.fc (y)
-        print("899", y.size())
-        y = y.view (y.size (0), y.size (1), y.size (2))
-        print("901", y.size(), y)
-        logits = torch.mean (y, 2)
+        h=y
+        h = self.fc_contra_m (h.view (h.size (0), -1))
+        return h,y
 
-        logits = self.sigmoid (logits)
-        print("903", logits.size())
-        return logits
-    def forward(self, x): ##forward contra
-        x_d,x_l = x[0],x[1]
-        y_d = self.base (x_d)
-        y_d = F.avg_pool3d (y_d, (2, y_d.size (3), y_d.size (4)), stride=1)
-        h_d = self.fc_contra(y_d.view(y_d.size(0),-1))
-        y_l = self.base (x_l)
-        y_l = F.avg_pool3d (y_l, (2, y_l.size (3), y_l.size (4)), stride=1)
-        h_l = self.fc_contra (y_l.view (y_l.size (0), -1))
-
-        y = torch.cat((y_d, y_l),dim=1)
-
+    def forward_single_light_large(self,x):
+        y = self.base_m (x)
+        y = F.avg_pool3d (y, (2, y.size (3), y.size (4)), stride=1)
+        h=y
+        h = self.fc_contra_m (h.view (h.size (0), -1))
+        return h,y
+    def forward_msscale(self,x):
+        x_d, x_l, full_x_d, full_x_l = x[0], x[1], x[2], x[3]
+        h_d, x_d = self.forward_single_light_small (x_d)
+        h_l, x_l = self.forward_single_light_small (x_l)
+        h_full_l, full_x_l = self.forward_single_light_large (full_x_l)
+        h_full_d, full_x_d = self.forward_single_light_large (full_x_d)
+        full_x = torch.cat ((full_x_d, full_x_l), dim=1)
+        x = torch.cat ((x_d, x_l), dim=1)
+        y = torch.cat ((full_x, x), dim=1)
         y = self.fc_2 (y)
 
         y = y.view (y.size (0), y.size (1), y.size (2))
@@ -1375,7 +1428,11 @@ class S3D (nn.Module):
 
         logits = self.sigmoid (logits)
 
-        return h_d, h_l, logits
+        return {"h_full_d": h_full_d, "h_full_l": h_full_l, "h_d": h_d, "h_l": h_l,"x": logits}
+
+    def forward(self,x):
+        print("msscale")
+        return self.forward_msscale(x)
 
 class BasicConv3d (nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
@@ -1940,12 +1997,12 @@ class InceptionI3d (nn.Module):
             nn.Linear (n , 500),
             nn.ReLU (inplace=True),
 
-            nn.Linear (500, 5))
+            nn.Linear (500, 21))
         self.fc_contra_large = nn.Sequential (
             nn.Linear (n, 500),
             nn.ReLU (inplace=True),
 
-            nn.Linear (500, 5))
+            nn.Linear (500, 21))
         # self.fc_contra = nn.Sequential (
         #     nn.Linear (n, 500),
         #     nn.ReLU (inplace=True),
@@ -2555,15 +2612,59 @@ class TSN(nn.Module):
 
 
 if __name__ == '__main__':
+    print("load demo")
+    base = nn.Sequential (
+        SepConv3d (3, 64, kernel_size=7, stride=2, padding=3),
+        nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+        BasicConv3d (64, 64, kernel_size=1, stride=1),
+        SepConv3d (64, 192, kernel_size=3, stride=1, padding=1),
+        nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+        Mixed_3b (),
+        Mixed_3c (),
+        nn.MaxPool3d (kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+        Mixed_4b (),
+        Mixed_4c (),
+        Mixed_4d (),
+        Mixed_4e (),
+        Mixed_4f (),
+        nn.MaxPool3d (kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=(0, 0, 0)),
+        Mixed_5b (),
+        Mixed_5c (),
+    )
+    for par in base[-1].parameters():
+        print(par)
+
+    print("################################")
+    base_m = nn.Sequential (
+        SepConv3d (3, 64, kernel_size=7, stride=2, padding=3),
+        nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+        BasicConv3d (64, 64, kernel_size=1, stride=1),
+        SepConv3d (64, 192, kernel_size=3, stride=1, padding=1),
+        nn.MaxPool3d (kernel_size=(1, 3, 3), stride=(1, 2, 2), padding=(0, 1, 1)),
+        Mixed_3b (),
+        Mixed_3c (),
+        nn.MaxPool3d (kernel_size=(3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+        Mixed_4b (),
+        Mixed_4c (),
+        Mixed_4d (),
+        Mixed_4e (),
+        Mixed_4f (),
+        nn.MaxPool3d (kernel_size=(2, 2, 2), stride=(2, 2, 2), padding=(0, 0, 0)),
+        Mixed_5b (),
+        Mixed_5c (),
+    )
+    for par in base_m[-1].parameters():
+        print(par)
+
     # opt = NetOption()
-    xl = torch.randn(4, 3, 21, 244, 244)
-    xd = torch.randn(4, 3, 21, 244, 244)
-    fullxl = torch.randn(4, 3, 21, 244, 244)
-    fullxd = torch.randn(4, 3, 21, 244, 244)
-    x = (xl, xd, fullxd, fullxl)
-    # x=(xl,xd)
-    model = resnet3d()
-    pred = model(x)
+    # xl = torch.randn(4, 3, 21, 244, 244)
+    # xd = torch.randn(4, 3, 21, 244, 244)
+    # fullxl = torch.randn(4, 3, 21, 244, 244)
+    # fullxd = torch.randn(4, 3, 21, 244, 244)
+    # x = (xl, xd, fullxd, fullxl)
+    # # x=(xl,xd)
+    # model = resnet3d()
+    # pred = model(x)
     # print(a.size(),  h[0].size(), h[1].size())
     # input_shape = (2,3, 21, 244, 244)
     # # model.replace_logits(1)

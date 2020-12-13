@@ -17,16 +17,18 @@ class Focal_ContrastiveLoss(torch.nn.Module):
     Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
     """
 
-    def __init__(self, save_hyper, alpha=0.25, gamma=2, margin=2, scale=16):
+    def __init__(self, save_hyper, alpha=0.25, gamma=2, margin=2, scale=16, mining_margin=0.8):
         super(Focal_ContrastiveLoss, self).__init__()
         self.margin = margin
         self.sigmoid = nn.Sigmoid()
         self.alpha=alpha
         self.gamma=gamma
+        self.mining_margin=mining_margin
         self.EPS = 1e-12
         self.scale=scale
         self.savehyper = save_hyper
         self.savehyper.write_to_dict ("margin_of_focal_contrastive", margin)
+        self.savehyper.write_to_dict ("Mining_margin_of_focal_contrastive", mining_margin)
         self.savehyper.write_to_dict ("gamma_of_focal_contrastive", gamma)
         self.savehyper.write_to_dict ("alpha_of_focal_contrastive", alpha)
         self.savehyper.write_to_dict ("scale_of_focal_contrastive", scale)
@@ -64,12 +66,11 @@ class Focal_ContrastiveLoss(torch.nn.Module):
         euclidean_distance = F.pairwise_distance (output1, output2, keepdim=True)
         euclidean_distance = euclidean_distance.squeeze (1)
         # label=label.squeeze (1)
-        # print("euclidean", euclidean_distance)
         # index=label==1
         sim_distance=euclidean_distance[label==1]
         dis_sim_distance=euclidean_distance[label==0]
         if len(sim_distance)>0:
-            mine_dis_sim = dis_sim_distance[dis_sim_distance-0.8 < max (sim_distance)] ##0.4 mining stategy
+            mine_dis_sim = dis_sim_distance[dis_sim_distance-self.mining_margin < max (sim_distance)] ##0.4 mining stategy
         else:
             mine_dis_sim = dis_sim_distance
         # print("mine_dis", mine_dis_sim)
@@ -96,6 +97,34 @@ class Focal_ContrastiveLoss(torch.nn.Module):
 
         # loss_contrastive = torch.mean(self.scale*(torch.pow((pt+self.EPS), self.gamma))*(1-label) * torch.pow(euclidean_distance, 2) +\
         #                               self.scale*(torch.pow((1-pt),self.gamma))*(label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
+
+        return loss_contrastive
+
+
+    def forward_balance(self, output1, output2, label):
+        euclidean_distance = F.pairwise_distance (output1, output2, keepdim=True)
+        euclidean_distance = euclidean_distance.squeeze (1)
+
+        sim_distance=euclidean_distance[label==1]
+        dis_sim_distance=euclidean_distance[label==0]
+        if len(sim_distance)>0:
+            mine_dis_sim = dis_sim_distance[dis_sim_distance-0.8 < max (sim_distance)] ##0.4 mining stategy
+        else:
+            mine_dis_sim = dis_sim_distance
+
+        mine_sim=sim_distance
+        lensim=mine_sim.size(0)
+        lendissim=mine_dis_sim.size(0)
+        pt_sim = self.sigmoid (mine_sim)  # pt 越大则 相似度越小   y=1代表不相似  y=0代表相似 相似的时候pt越大代表越难   不相似的时候pt越小则越难
+        pt_dissim=self.sigmoid (mine_dis_sim)
+        mine_dis_sim_ = torch.pow (torch.clamp (self.margin - mine_dis_sim, min=0.0), 2)
+        mine_sim_ =  torch.pow (mine_sim, 2)
+
+        dis_sim_final = (self.alpha) * self.scale * mine_dis_sim_ *torch.pow((1-pt_dissim),self.gamma)   #(self.alpha)*
+        sim_final = (1 - self.alpha) * self.scale * mine_sim_ *torch.pow((pt_sim+self.EPS), self.gamma)  #(1-self.alpha)*
+
+        loss_contrastive = (torch.sum(dis_sim_final)+torch.sum(sim_final))/(int(mine_sim.size(0)+mine_dis_sim.size(0)))
+
 
         return loss_contrastive
 
@@ -143,5 +172,5 @@ if __name__ == '__main__':
     a = F.normalize(a, dim=1)
     b = F.normalize(b, dim=1)
     label = torch.Tensor([1,0,1,0,1,0,1,0])
-    loss1 = loss(a,b,label)
+    loss1 = loss.forward_balance(a,b,label)
     print(loss1)
