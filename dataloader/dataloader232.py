@@ -166,8 +166,10 @@ class DataLoader (object):
             test_dir = "/mnt/cephfs/home/yangyifan/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/oneclock_data_split/valv5.txt"##0413##fix version 0430
         if opt.dataset == "BJ":
             train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/train_bj.txt" ##BJ TRAIN
-            # train_dir = "/home/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"
+            # train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt" ##overtrain strategy
             test_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/test_bj.txt"  ##BJ TEST
+            # train_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/test_bj.txt"
+            # test_dir = "/mnt/cephfs/home/yangyifan/yangyifan/232/yangyifan/code/multiViewCNN/Multi_ViewCNN/dataProcess/split_bjdata/trainvallist/overtrain/train_bj.txt"  ##BJ TEST
 
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                          std=[0.229, 0.224, 0.225])
@@ -229,6 +231,6 @@ if __name__ == '__main__':
     for i, j, k, q in test_loader:
         print(i[0].size(2))
         print(k,q)
-        break
+        # break
 
     # print(len(train_loader))

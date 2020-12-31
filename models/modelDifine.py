@@ -2613,20 +2613,20 @@ if __name__ == '__main__':
     #         p.requires_grad = False
     #     model.fc = nn.Linear(2048, 1)
 
-    # num_class = 1
-    #
-    # net  = TSN(num_class, 21, "RGB",
-    #           base_model='resnet101',
-    #           consensus_type="avg",
-    #           img_feature_dim=244,
-    #           pretrain='imagenet',
-    #           is_shift=False, shift_div=21, shift_place='blockres',
-    #           non_local=False,
-    #           )
-    #
-    # a =  torch.randn(4, 3, 21, 244, 244)
-    # b = net(a)
-    # print(b)
+    num_class = 1
+
+    net  = TSN(num_class, 21, "RGB",
+              base_model='resnet101',
+              consensus_type="avg",
+              img_feature_dim=244,
+              pretrain='imagenet',
+              is_shift=False, shift_div=21, shift_place='blockres',
+              non_local=False,
+              )
+
+    a =  torch.randn(4, 3, 21, 244, 244)
+    b = net(a)
+    print(b)
     # model = S3D (opt.numclass)
     # a = torch.randn (4, 3, 21, 244, 244)
     # b = model((a,a))

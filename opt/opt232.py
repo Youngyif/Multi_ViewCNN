@@ -62,7 +62,7 @@ class NetOption (object):
         # ---------- Model options --------------------------------------------
         self.trainingType = 'onevsall'  # options: onevsall | multiclass
         self.netType = "resnet3d"  # options: | C3D | I3D  | S3D | slowfast | resnet3d | multi_viewCNN |lstm_mvcnn |dual_resnet3d|dual_extract_resnet3d | TSN
-        self.experimentID = "squeeze_resnet3d_s16m2g2a0.5#mining_margin0.8#_margin2_featuredim=21_focal_reduce_reducepower=0.5_124"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
+        self.experimentID = "test_number_of_train"  ##"resnet3d_multiway_CONTRA_MARGIN=2_RATIO=0.1_pretrain_0917"
         self.depth = 18  # resnet depth: (n-2)%6==0
         self.wideFactor = 1  # wide factor for wide-resnet
         self.numOfView = 10

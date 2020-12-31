@@ -483,7 +483,7 @@ class Trainer (object):
         auc, loss_sum, acc, precision, recall, f1, gmean))
         return auc, loss_sum, acc, precision, recall, f1, gmean, tn, fp, fn, tp, wronglist
 
-def generate_factor(save, T, initv=1, T_max=200, power=0.5):
+def generate_factor(save, T, initv=1, T_max=200, power=1):
     if T==1:
         save.write_to_dict("init_value_cumulative", initv)
         save.write_to_dict ("power_cumulative", power)

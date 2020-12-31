@@ -17,7 +17,7 @@ class Focal_ContrastiveLoss(torch.nn.Module):
     Based on: http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
     """
 
-    def __init__(self, save_hyper, alpha=0.25, gamma=2, margin=2, scale=16):
+    def __init__(self, save_hyper, alpha=0.25, gamma=1, margin=2, scale=16, mining_margin=0.8):
         super(Focal_ContrastiveLoss, self).__init__()
         self.margin = margin
         self.sigmoid = nn.Sigmoid()
@@ -25,7 +25,9 @@ class Focal_ContrastiveLoss(torch.nn.Module):
         self.gamma=gamma
         self.EPS = 1e-12
         self.scale=scale
+        self.mining_margin=mining_margin
         self.savehyper = save_hyper
+        self.savehyper.write_to_dict ("mining_margin_of_focal_contrastive", mining_margin)
         self.savehyper.write_to_dict ("margin_of_focal_contrastive", margin)
         self.savehyper.write_to_dict ("gamma_of_focal_contrastive", gamma)
         self.savehyper.write_to_dict ("alpha_of_focal_contrastive", alpha)
@@ -69,7 +71,7 @@ class Focal_ContrastiveLoss(torch.nn.Module):
         sim_distance=euclidean_distance[label==1]
         dis_sim_distance=euclidean_distance[label==0]
         if len(sim_distance)>0:
-            mine_dis_sim = dis_sim_distance[dis_sim_distance-0.8 < max (sim_distance)] ##0.4 mining stategy
+            mine_dis_sim = dis_sim_distance[dis_sim_distance-self.mining_margin < max (sim_distance)] ##0.4 mining stategy
         else:
             mine_dis_sim = dis_sim_distance
         # print("mine_dis", mine_dis_sim)
