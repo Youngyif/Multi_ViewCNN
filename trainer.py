@@ -487,8 +487,8 @@ def generate_factor(save, T, initv=1, T_max=200, power=1):
     if T==1:
         save.write_to_dict("init_value_cumulative", initv)
         save.write_to_dict ("power_cumulative", power)
-    a = initv*(1-(math.pow(float((T/T_max)),power)))
-    # a=1
+    # a = initv*(1-(math.pow(float((T/T_max)),power)))
+    a=0.5
     # if T<=25:
     #     a=1
     # elif T>25 and T<=50:
